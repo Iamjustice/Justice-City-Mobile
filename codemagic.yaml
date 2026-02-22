@@ -1,0 +1,60 @@
+﻿workflows:
+  justice-city-mobile-web:
+    name: Justice City Mobile Web
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+    scripts:
+      - flutter pub get
+      - flutter analyze
+      - flutter test
+      - flutter build web --release
+    artifacts:
+      - build/web/**
+
+  justice-city-mobile-android:
+    name: Justice City Mobile Android
+    max_build_duration: 90
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - ~/.gradle/caches
+        - ~/.gradle/wrapper
+    scripts:
+      - flutter pub get
+      - flutter analyze
+      - flutter test
+      - flutter build appbundle --release
+      - flutter build apk --release
+    artifacts:
+      - build/app/outputs/**/*.apk
+      - build/app/outputs/**/*.aab
+      - build/app/outputs/**/mapping.txt
+
+  justice-city-mobile-ios:
+    name: Justice City Mobile iOS
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - ~/.cocoapods/repos
+    scripts:
+      - flutter pub get
+      - flutter analyze
+      - flutter test
+      - flutter build ipa --release --no-codesign
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
