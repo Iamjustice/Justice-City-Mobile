@@ -1,0 +1,130 @@
+JUSTICE CITY LTD – ENTERPRISE PRODUCT REQUIREMENTS DOCUMENT (MASTER)
+Product: JUSTICE CITY LTD – Trust-First Real Estate Marketplace
+Version: 3.0 (Enterprise Standard – Consolidated)
+Date: 13 January 2026
+Confidentiality: Internal / Partners / Investors
+Owner: Product & Platform Strategy
+1. Executive Summary
+JUSTICE CITY LTD is a platform-mediated digital real estate marketplace designed to tackle systemic trust failures in emerging markets (specifically Nigeria). Unlike classifieds where trust is optional, Justice City enforces mandatory identity verification and property authorization verification as infrastructure gates.
+The Core Value Proposition:
+ * Verified People + Verified Properties = Safer Real Estate Transactions.
+ * Revenue: 5% Commission on every closed property transaction (Direct or Agent-Mediated).
+ * Differentiation: "Trust is Non-Negotiable." No verification, no interaction.
+2. Product Principles & Vision
+2.1 Problem Statement
+ * Market Problem: High fraud rates, impersonation, and unverified listings in the Nigerian real estate market.
+ * Root Cause: Existing platforms treat verification as a cosmetic badge rather than a functional requirement.
+ * Opportunity: Create a defensible moat by enforcing verification at the infrastructure level.
+2.2 Product Principles
+ * Trust Is Non-Negotiable: No user (buyer, seller, or agent) can engage in sensitive actions without identity verification.
+ * Verification as Infrastructure: It is a system gate, not a premium feature.
+ * Compliance by Design: NDPR and explicit consent are first-class citizens.
+ * Auditability Over Convenience: Every action (approval, rejection, chat) is traceable.
+ * Scalable Moderation: Admin workflows are designed to handle volume without degrading trust.
+3. Scope Definition (MVP)
+In-Scope (Launch)
+ * Identity Verification: Mandatory for Buyers, Sellers, and Agents (via Smile ID).
+ * Property Verification: Proof of Ownership & Authorization Letters required for publication.
+ * Listing Lifecycle: Draft → Pending Docs → Approved → Published → Expired/Sold.
+ * In-App Communication: Secure chat for Buyers ↔ Sellers, Buyers ↔ Agents, Renters ↔ Agents.
+ * Marketplace Mediation: 5% Commission tracking on all deals.
+ * Admin Dashboard: Verification queues, moderation tools, and audit logs.
+Out-of-Scope (Deferred / Future Phases)
+ * FinTech: Escrow, Wallet Systems, Automated Payouts, KYC-linked payments.
+ * Discovery: Advanced AI recommendations.
+ * Expansion: International MLS integration.
+4. Functional Requirements & User Journeys
+4.1 The "Trust Gate" (Identity)
+ * Requirement: Users initiate signup but remain in unverified state.
+ * Logic: Access to POST /properties, POST /chats, and POST /transactions is blocked until is_verified = true.
+ * Implementation: Smile ID integration for Biometric + ID check.
+4.2 The "Property Gate" (Listings)
+ * Requirement: A property cannot be public until documents are reviewed.
+ * Flow:
+   * Agent/Owner creates listing (Status: Draft).
+   * Uploads Title Deed + Authority Letter (Status: Pending_Docs).
+   * Admin reviews documents in Dashboard.
+   * Admin approves (Status: Published) or Rejects (Status: Flagged with reason).
+4.3 In-App Chat & Communication
+ * Requirement: All negotiation must happen on-platform to prevent revenue leakage.
+ * Scoping: Chats are scoped to a specific Property ID.
+ * Privacy: Contact details (phone numbers) are masked or flagged by the system if shared prematurely.
+ * Parties: Buyer ↔ Seller, Buyer ↔ Agent.
+4.4 Transaction & Revenue Model
+ * Model: Platform-mediated requests.
+ * Commission: 5% of the total closed deal value.
+ * Tracking:
+   * Direct Deal: Platform earns 5%.
+   * Indirect Deal (Agent): Platform earns 5%; Agent commission is tracked internally for future payout.
+ * Ledger: Immutable record of Transaction Value, Platform Fee, and Agent ID.
+5. Technical Architecture & Data Model
+Stack: Flutter (Mobile/Web) + Supabase (Auth, DB, Storage, Realtime) + Smile ID.
+5.1 Core Database Schema (Supabase)
+Profiles Table
+ * id: UUID (PK)
+ * role: Enum (buyer, seller, agent, admin)
+ * is_verified: Boolean (The Gate)
+ * commission_balance: Numeric (For agents)
+ * smile_job_id: Text (Audit reference)
+Properties Table
+ * id: UUID (PK)
+ * status: Enum (draft, pending_docs, published, sold)
+ * doc_verification_status: Enum (pending, approved, rejected)
+ * title_doc_url: Private Storage Path
+ * auth_letter_url: Private Storage Path
+Transactions Table
+ * id: UUID (PK)
+ * sale_price: Numeric
+ * platform_commission: Numeric (Calculated: sale_price * 0.05)
+ * status: Enum (pending, completed)
+5.2 Security & RLS Policies
+ * Public Read: Only verified users can view full listing details.
+ * Owner Write: Only the creator or Admin can edit a property.
+ * Chat Privacy: Only participants and Admins can read messages.
+ * Storage Security: Property documents are in private buckets, accessible only via signed URLs generated for Admins and Owners.
+6. Admin Dashboard & Operations
+The Admin Dashboard is the operational nerve center.
+6.1 Modules
+ * Verification Queue: Priority list of users awaiting Smile ID manual review (if automated fails) and Properties awaiting document review.
+ * Transaction Ledger: View of all active deals and total commission accrued.
+ * Chat Monitoring: Compliance view to resolve disputes or flag off-platform leakage.
+ * User Management: Ban/Suspend capabilities.
+6.2 Service Level Agreements (SLAs)
+ * Identity Verification: < 5 minutes (Automated).
+ * Property Document Review: < 48 hours (Manual Admin).
+ * Support/Dispute Resolution: < 24 hours.
+7. Implementation Roadmap (Sprint Plan)
+Sprint 1: Foundation (Weeks 1-2)
+ * Setup Supabase Project & Auth.
+ * Implement profiles table and is_verified logic.
+ * Basic Flutter shell.
+Sprint 2: The Trust Engine (Weeks 3-4)
+ * Integrate Smile ID SDK.
+ * Build Verification UI & Status Screens.
+ * Implement Admin Verification Queue (Basic).
+Sprint 3: Property Lifecycle (Weeks 5-6)
+ * Property CRUD (Create, Read, Update, Delete).
+ * Document Upload to Secure Storage.
+ * Admin Property Approval Workflow.
+Sprint 4: Communication (Weeks 7-8)
+ * Real-time Chat implementation.
+ * Chat RLS policies.
+ * Marketplace Search & Filters.
+Sprint 5: Revenue & Wrap-up (Weeks 9-10)
+ * Transaction Ledger.
+ * Commission Calculation Logic.
+ * End-to-End Testing & QA.
+ * Soft Launch Preparation.
+8. Success Metrics (KPIs)
+ * Trust: Fraud rate < 5%.
+ * Adoption: ≥ 500 Verified Agents in Year 1.
+ * Engagement: ≥ 5,000 Monthly Active Users (MAU).
+ * Revenue: Commission capture rate ≥ 98% (Low leakage).
+9. Future Phases (Deferred)
+The following features are explicitly deferred but the architecture supports them:
+ * Escrow Service: Holding funds securely until transaction completion.
+ * Digital Wallets: Storing agent commissions and user funds.
+ * Automated Payouts: Integrating with Banks/Payment Gateways for auto-settlement.
+ * KYC-Linked Payments: Ensuring the payer matches the verified identity.
+Approved By: Product Strategy & Engineering
+Date: 13 Jan 2026

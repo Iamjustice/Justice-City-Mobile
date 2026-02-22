@@ -1,0 +1,60 @@
+JUSTICE CITY LTD – Developer Handoff & Master Spec (v2.1 FINAL)
+Date: 13 January 2026
+Version: 2.1 (Enterprise Standard)
+Confidentiality: Internal Engineering & Product Strategy
+1. Executive Technical Summary
+Justice City is a "Trust-First" Real Estate Marketplace. Unlike standard classifieds, this platform enforces a strict Verification Gate Architecture.
+ * Core Rule: No write access (listing, chatting, transacting) is allowed without a verified identity.
+ * Revenue: 5% Commission on ALL closed deals (Direct or Agent-Mediated).
+ * Stack: Flutter (Mobile/Web), Supabase (Auth, DB, Realtime), Smile ID (Identity).
+2. Logic Gates & User Flows
+2.1. The "Trust Gate" (Identity)
+Implementation: Middleware/RLS Policy.
+ * Trigger: User signs up. is_verified defaults to FALSE.
+ * Action: User submits Selfie + ID via Smile ID SDK.
+ * Webhook: Smile ID -> Supabase Edge Function -> Updates profiles.is_verified.
+ * Constraint: Until is_verified == TRUE, the user sees a "Verification Required" blocker on:
+   * POST /properties
+   * POST /chats
+   * POST /transactions
+2.2. The "Property Gate" (Listing)
+Implementation: State Machine in PostgreSQL.
+ * Draft: Owner creates listing. Visible only to Owner.
+ * Pending Docs: Owner uploads Proof of Ownership/Auth Letter. Status -> pending_docs.
+ * Admin Review: Admin checks documents.
+   * Approve: Status -> published (Publicly visible).
+   * Reject: Status -> flagged (Owner notified).
+2.3. The "Communication Gate" (Chat)
+Implementation: RLS + Realtime.
+ * Scope: Chat is Property-Specific. A buyer opens a chat about a specific Property ID.
+ * Participants: Buyer, Seller, Agent (if applicable).
+ * Renter Scenario: Renters follow the Buyer flow but query "For Rent" properties.
+ * Audit: Admins can read ALL chats for dispute resolution (Compliance Requirement).
+3. Revenue & Transaction Architecture
+3.1. Commission Logic
+The platform takes a flat 5% cut.
+ * Formula: Commission = Transaction Value * 0.05
+ * Agent Commission: Tracked separately in the ledger but not automatically paid out in MVP (Deferred Phase).
+3.2. Data Model (High Level)
+ * Profiles: Users, Roles (Buyer, Seller, Agent, Renter, Admin), Verification Status.
+ * Properties: Listings, Geo-location, Doc Status.
+ * Transactions: The immutable ledger of deals.
+ * Chats: Secure messaging channels.
+4. Implementation Roadmap (Sprint Plan)
+| Sprint | Focus | Key Deliverable |
+|---|---|---|
+| 1 | Core Infra | Supabase Project Setup, Auth, Profile Table, RLS Base. |
+| 2 | Property Engine | Property CRUD, Storage Buckets for Deeds, RLS for Owners. |
+| 3 | Identity | Smile ID Integration, Verification Webhooks. |
+| 4 | Admin Ops | Admin Dashboard (Read-Only Views), Verification Queue. |
+| 5 | Discovery | Public Marketplace, Search Filters, Map View. |
+| 6 | Chat | Real-time Messaging (Buyer <-> Seller/Agent). |
+| 7 | Revenue | Transaction Ledger, Commission Calculation Logic. |
+| 8 | QA/Test | Unit Tests, E2E Flows, Security Audit. |
+| 9 | Launch | Soft Launch, Production Env Deployment. |
+5. Security & Compliance (Non-Negotiable)
+ * NDPR: User data must be exportable and deletable.
+ * Audit Logs: Every Admin action (Verify/Reject) must be logged in admin_logs.
+ * Storage:
+   * public-listings: Open read.
+   * private-docs: Owner + Admin read ONLY.

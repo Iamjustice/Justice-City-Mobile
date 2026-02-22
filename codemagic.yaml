@@ -1,60 +1,52 @@
-﻿workflows:
-  justice-city-mobile-web:
-    name: Justice City Mobile Web
+workflows:
+  justice-city-web:
+    name: Justice City Web CI
     max_build_duration: 60
     instance_type: linux_x2
     environment:
-      flutter: stable
-    cache:
-      cache_paths:
-        - $FLUTTER_ROOT/.pub-cache
+      node: 22
     scripts:
-      - flutter pub get
-      - flutter analyze
-      - flutter test
-      - flutter build web --release
+      - npm ci
+      - npm run check
+      - npm run build
     artifacts:
-      - build/web/**
+      - dist/**
 
-  justice-city-mobile-android:
-    name: Justice City Mobile Android
+  justice-city-android:
+    name: Justice City Android (Capacitor)
     max_build_duration: 90
     instance_type: linux_x2
     environment:
-      flutter: stable
-    cache:
-      cache_paths:
-        - $FLUTTER_ROOT/.pub-cache
-        - ~/.gradle/caches
-        - ~/.gradle/wrapper
+      node: 22
+      java: 17
     scripts:
-      - flutter pub get
-      - flutter analyze
-      - flutter test
-      - flutter build appbundle --release
-      - flutter build apk --release
+      - npm ci
+      - npm run check
+      - npm run build
+      - npm i --no-save @capacitor/cli @capacitor/core @capacitor/android
+      - npx cap sync android
+      - cd android && ./gradlew assembleRelease bundleRelease
     artifacts:
-      - build/app/outputs/**/*.apk
-      - build/app/outputs/**/*.aab
-      - build/app/outputs/**/mapping.txt
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/mapping.txt
 
-  justice-city-mobile-ios:
-    name: Justice City Mobile iOS
+  justice-city-ios:
+    name: Justice City iOS (Capacitor)
     max_build_duration: 90
     instance_type: mac_mini_m2
     environment:
-      flutter: stable
+      node: 22
       xcode: latest
       cocoapods: default
-    cache:
-      cache_paths:
-        - $FLUTTER_ROOT/.pub-cache
-        - ~/.cocoapods/repos
     scripts:
-      - flutter pub get
-      - flutter analyze
-      - flutter test
-      - flutter build ipa --release --no-codesign
+      - npm ci
+      - npm run check
+      - npm run build
+      - npm i --no-save @capacitor/cli @capacitor/core @capacitor/ios
+      - npx cap sync ios
+      - cd ios/App && pod install
+      - xcode-project build-ipa --workspace "ios/App/App.xcworkspace" --scheme "App"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log

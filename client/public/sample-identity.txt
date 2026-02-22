@@ -1,0 +1,4 @@
+Sample Identity Document
+
+This is a placeholder file for local admin review workflows.
+Replace this URL with the actual uploaded identity document URL from storage.

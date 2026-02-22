@@ -1,0 +1,4 @@
+Sample Utility Bill Document
+
+This is a placeholder file for local admin review workflows.
+Replace this URL with the actual uploaded utility bill document URL from storage.

@@ -1,0 +1,204 @@
+JUSTICE CITY LTD — APP FLOW DESIGN (FIGMA EXECUTION BLUEPRINT)
+
+Outcome:
+When this is followed inside Figma:
+	•	Every frame is placed correctly
+	•	Every connection is wired correctly
+	•	Every gate is visually enforced
+	•	Prototypes behave exactly like the backend logic
+
+⸻
+
+STEP 1 — CREATE FIGMA FILE (MANDATORY SETUP)
+
+File name
+
+Justice City — App Flow Design (V1)
+
+Pages (Create exactly in this order):
+	1.	00_System_Map
+	2.	01_Onboarding_Identity
+	3.	02_Buyer_Renter_Flow
+	4.	03_Seller_Agent_Flow
+	5.	04_Professional_Services
+	6.	05_Admin_Dashboard
+	7.	06_Shared_Components
+
+⸻
+
+STEP 2 — PAGE-BY-PAGE APP FLOW DESIGN
+
+⸻
+
+🟦 PAGE 00 — SYSTEM MAP (FLOW LEGEND)
+
+Frames
+	•	Infrastructure Gates Overview
+	•	User Roles
+	•	Global State Machine
+
+Content
+	•	Identity Gate
+	•	Property Gate
+	•	Communication Gate
+	•	Transaction Gate
+
+🔖 Designer Note (Sticky):
+
+Justice City is gate-driven, not screen-driven.
+No flow bypasses backend verification.
+
+(No prototype links here – reference only)
+
+⸻
+
+🟦 PAGE 01 — ONBOARDING & IDENTITY FLOW
+
+Frames (Left → Right, horizontal)
+	1.	Welcome
+	2.	Sign Up
+	3.	Login
+	4.	Unverified Home
+	5.	Verification Required (Modal)
+	6.	Smile ID Instructions
+	7.	Smile ID Capture
+	8.	Verification Processing
+	9.	Verified Home
+
+Prototype Connections
+	•	Welcome → Sign Up
+	•	Sign Up → Unverified Home
+	•	Any gated action → Verification Required
+	•	Verification Required → Smile ID Instructions
+	•	Smile ID Instructions → Smile ID Capture
+	•	Smile ID Capture → Verification Processing
+	•	Verification Processing → Verified Home
+
+🔒 Gate Label (Add text near arrows):
+
+Blocked unless is_verified = true
+
+
+⸻
+
+🟦 PAGE 02 — BUYER / RENTER FLOW
+
+Discovery Frames
+	1.	Home / Search
+	2.	Search Filters
+	3.	Search Results
+	4.	Property Details (Public)
+	5.	Property Details (Verified)
+
+Communication Frames
+	6.	Chat Blocked (Unverified)
+	7.	Property Chat
+	8.	Negotiation Active
+
+Transaction Frames
+	9.	Close Deal
+	10.	Deal Summary
+	11.	Transaction Pending Audit
+	12.	Transaction Completed
+
+Conditional Prototyping
+	•	From Property Details (Public):
+	•	If unverified → Chat Blocked
+	•	If verified → Property Chat
+
+🔖 Designer Rule
+
+Chat frame must visually show property context (Property ID, Address).
+
+⸻
+
+🟦 PAGE 03 — SELLER / AGENT FLOW
+
+Listing Lifecycle Frames
+	1.	Seller Dashboard
+	2.	Create Listing
+	3.	Listing Draft
+	4.	Upload Documents
+	5.	Pending Review
+	6.	Rejected (Flagged)
+	7.	Published Listing
+	8.	Under Negotiation
+	9.	Close Listing
+	10.	Listing Closed
+
+Flow Wiring
+	•	Draft → Upload Documents → Pending Review
+	•	Pending Review → Published OR Rejected
+	•	Published → Under Negotiation → Closed
+
+🔒 Hard Rule
+
+“Publish” button must be disabled until documents are approved.
+
+⸻
+
+🟦 PAGE 04 — PROFESSIONAL SERVICES FLOW
+
+Frames
+	1.	Services Home
+	2.	Select Service
+	3.	Service Details
+	4.	Book Service
+	5.	Payment
+	6.	Booking Confirmed
+	7.	Provider Fulfillment
+	8.	Report Uploaded
+	9.	Service Completed
+
+🔖 Gate
+
+Only verified users can book services.
+
+⸻
+
+🟦 PAGE 05 — ADMIN DASHBOARD (DESKTOP FLOW)
+
+Frames (Top-down layout)
+	1.	Admin Login
+	2.	Admin Overview
+	3.	Identity Verification Queue
+	4.	Identity Review
+	5.	Property Document Queue
+	6.	Property Review
+	7.	Chat Monitoring
+	8.	Transaction Ledger
+	9.	User Management
+	10.	Audit Logs
+
+Admin Actions
+	•	Approve → State change
+	•	Reject → Mandatory reason modal
+	•	Suspend → Immediate effect
+
+🔒 Audit Rule
+
+Every admin action must show timestamp + admin ID.
+
+⸻
+
+🟦 PAGE 06 — SHARED COMPONENTS (CREATE AS VARIANTS)
+
+Components
+	•	Verification Banner (Unverified / Pending / Verified)
+	•	Property Card (Draft / Pending / Published / Closed)
+	•	Status Pill (Approved / Pending / Rejected)
+	•	Gate Blocker Overlay
+	•	Chat Message (Normal / Masked / Flagged)
+	•	Primary Button (Enabled / Disabled / Loading)
+
+⸻
+
+STEP 3 — PROTOTYPE SETTINGS (IMPORTANT)
+
+Inside Figma:
+	•	Use Prototype Mode
+	•	Use Smart Animate
+	•	Use Interactive Components
+	•	Label conditional flows clearly:
+	•	IF VERIFIED
+	•	IF UNVERIFIED
