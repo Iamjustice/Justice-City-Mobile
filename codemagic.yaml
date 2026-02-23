@@ -1,52 +1,61 @@
 workflows:
-  justice-city-web:
-    name: Justice City Web CI
-    max_build_duration: 60
-    instance_type: linux_x2
-    environment:
-      node: 22
-    scripts:
-      - npm ci
-      - npm run check
-      - npm run build
-    artifacts:
-      - dist/**
-
-  justice-city-android:
-    name: Justice City Android (Capacitor)
+  justice-city-flutter-web:
+    name: Justice City Flutter Web
     max_build_duration: 90
     instance_type: linux_x2
     environment:
-      node: 22
+      flutter: stable
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+    scripts:
+      - flutter pub get
+      - flutter pub run build_runner build --delete-conflicting-outputs
+      - flutter analyze --no-fatal-warnings --no-fatal-infos
+      - flutter build web --release
+    artifacts:
+      - build/web/**
+
+  justice-city-flutter-android:
+    name: Justice City Flutter Android
+    max_build_duration: 120
+    instance_type: linux_x2
+    environment:
+      flutter: stable
       java: 17
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - ~/.gradle/caches
+        - ~/.gradle/wrapper
     scripts:
-      - npm ci
-      - npm run check
-      - npm run build
-      - npm i --no-save @capacitor/cli @capacitor/core @capacitor/android
-      - npx cap sync android
-      - cd android && ./gradlew assembleRelease bundleRelease
+      - flutter pub get
+      - flutter pub run build_runner build --delete-conflicting-outputs
+      - flutter analyze --no-fatal-warnings --no-fatal-infos
+      - flutter build appbundle --release
+      - flutter build apk --release
     artifacts:
-      - android/app/build/outputs/**/*.apk
-      - android/app/build/outputs/**/*.aab
-      - android/app/build/outputs/**/mapping.txt
+      - build/app/outputs/**/*.apk
+      - build/app/outputs/**/*.aab
+      - build/app/outputs/**/mapping.txt
 
-  justice-city-ios:
-    name: Justice City iOS (Capacitor)
-    max_build_duration: 90
+  justice-city-flutter-ios:
+    name: Justice City Flutter iOS
+    max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
-      node: 22
+      flutter: stable
       xcode: latest
       cocoapods: default
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - ~/.cocoapods/repos
     scripts:
-      - npm ci
-      - npm run check
-      - npm run build
-      - npm i --no-save @capacitor/cli @capacitor/core @capacitor/ios
-      - npx cap sync ios
-      - cd ios/App && pod install
-      - xcode-project build-ipa --workspace "ios/App/App.xcworkspace" --scheme "App"
+      - flutter pub get
+      - flutter pub run build_runner build --delete-conflicting-outputs
+      - flutter analyze --no-fatal-warnings --no-fatal-infos
+      - flutter build ipa --release --no-codesign
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
