@@ -14,6 +14,7 @@ import '../features/verify/verify_screen.dart';
 import '../features/transactions/transaction_center_screen.dart';
 import '../features/services/services_screen.dart';
 import '../features/services/provider_package_screen.dart';
+import '../features/parity/web_parity_screens.dart';
 import '../domain/models/listing.dart';
 import '../domain/models/chat_conversation.dart';
 import '../state/session_provider.dart';
@@ -31,11 +32,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = loc == '/auth';
       final isVerifyRoute = loc == '/verify';
       final isAdminRoute = loc == '/admin';
+      final isListingRoute = loc == '/listings' || loc.startsWith('/property/');
+      final isPublicAuthRoute =
+          loc == '/' ||
+          loc == '/home' ||
+          loc == '/services' ||
+          loc == '/hiring' ||
+          loc == '/request-callback' ||
+          loc == '/schedule-tour' ||
+          loc == '/terms-of-service' ||
+          loc == '/privacy-policy' ||
+          loc == '/escrow-policy' ||
+          loc.startsWith('/provider-package/');
 
       final signedIn = session != null;
 
       // Auth gate
-      if (!signedIn && !isAuthRoute) return '/auth';
+      if (!signedIn && !isAuthRoute && !isPublicAuthRoute) return '/auth';
       if (signedIn && isAuthRoute) return '/home';
 
       // Admin gate
@@ -51,18 +64,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      // Trust gate (verification) — only enforce once we have a resolved status.
+      // Listings route gate (operator roles only for current mobile APIs).
+      if (signedIn && isListingRoute) {
+        final me = ref.read(meProvider);
+        return me.maybeWhen(
+          data: (u) {
+            final role = (u?.role ?? '').trim().toLowerCase();
+            final isOperator =
+                role == 'admin' || role == 'agent' || role == 'seller' || role == 'owner';
+            return isOperator ? null : '/dashboard';
+          },
+          orElse: () => null,
+        );
+      }
+
+      // Trust gate (verification) - only enforce once we have a resolved status.
       if (signedIn && !isAuthRoute) {
         final verification = ref.read(verificationStatusProvider);
 
-        final isPublicRoute = loc == '/home' || isVerifyRoute;
+        final isPublicRoute = isPublicAuthRoute || isVerifyRoute;
         if (!isPublicRoute) {
-          return verification.maybeWhen(
+          return verification.when(
             data: (s) {
               final verified = s?.isVerified == true;
               return verified ? null : '/verify';
             },
-            orElse: () => null, // loading/error -> don't block navigation
+            loading: () => '/verify',
+            error: (_, __) => '/verify',
           );
         }
       }
@@ -71,6 +99,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/',
+        redirect: (_, __) => '/home',
+      ),
       GoRoute(
         path: '/auth',
         builder: (_, __) => const AuthScreen(),
@@ -86,6 +118,34 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/services',
         builder: (_, __) => const ServicesScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (_, __) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/request-callback',
+        builder: (_, __) => const RequestCallbackScreen(),
+      ),
+      GoRoute(
+        path: '/schedule-tour',
+        builder: (_, __) => const ScheduleTourScreen(),
+      ),
+      GoRoute(
+        path: '/hiring',
+        builder: (_, __) => const HiringScreen(),
+      ),
+      GoRoute(
+        path: '/terms-of-service',
+        builder: (_, __) => const TermsOfServiceScreen(),
+      ),
+      GoRoute(
+        path: '/privacy-policy',
+        builder: (_, __) => const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: '/escrow-policy',
+        builder: (_, __) => const EscrowPolicyScreen(),
       ),
       GoRoute(
         path: '/provider-package/:token',
@@ -151,5 +211,6 @@ final routerRefreshProvider = Provider<ValueNotifier<int>>((ref) {
   final notifier = ValueNotifier<int>(0);
   ref.listen(sessionProvider, (_, __) => notifier.value++);
   ref.listen(verificationStatusProvider, (_, __) => notifier.value++);
+  ref.listen(meProvider, (_, __) => notifier.value++);
   return notifier;
 });

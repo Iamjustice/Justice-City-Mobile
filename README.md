@@ -1,37 +1,53 @@
-# Justice City (Flutter Starter)
+# Justice City Mobile (Flutter)
 
-This is a **starter Flutter mobile app** scaffolded to match the Justice-City backend setup:
-- Supabase Auth + Storage
-- Custom Node API (Express) endpoints under `/api/*`
+Production mobile client for Justice City, integrated with:
+- Supabase Auth/Storage
+- Justice City Node API (`/api/*`)
 
-## 1) Prerequisites
-- Flutter (stable)
+## Feature Coverage
+- Auth and profile updates
+- Verification flow (email OTP, phone OTP, KYC document upload, Smile ID submit)
+- Role-aware routing and dashboards (admin/operator/buyer)
+- Listings and property details (operator scope)
+- Chat conversations, messages, and attachments
+- Transaction, escrow, and dispute flows
+- Services, provider package lookup, callback/tour requests, hiring application
+
+## Prerequisites
+- Flutter stable
 - Dart 3.x
-- Android Studio / Xcode as needed
+- Android Studio and/or Xcode
 
-## 2) Configure environment
-Create a file at `lib/env.dart` OR pass via `--dart-define` (recommended).
-
-### Recommended: --dart-define
-Run:
-
+## Run Locally
 ```bash
+flutter pub get
+flutter pub run build_runner build --delete-conflicting-outputs
+
 flutter run \
   --dart-define=SUPABASE_URL="https://YOUR.supabase.co" \
   --dart-define=SUPABASE_ANON_KEY="YOUR_ANON_KEY" \
-  --dart-define=API_BASE_URL="https://justicecityltd.com"
+  --dart-define=API_BASE_URL="https://YOUR_NODE_API_BASE"
 ```
 
-`API_BASE_URL` should point at your Node server (same domain as your deployed web app is fine).
+## Quality Gates
+```bash
+flutter analyze --no-fatal-warnings --no-fatal-infos
+flutter test
+```
 
-## 3) What’s included
-- go_router routing: /auth, /home, /listings, /chat, /dashboard
-- Riverpod state management
-- Supabase session listener + basic gate logic (signed-in required)
-- Typed API client (Dio) with JWT injection from Supabase session
-- Minimal repositories: AuthRepository, ListingsRepository, ChatRepository (skeleton methods)
+## CI (Codemagic)
+`codemagic.yaml` includes workflows for:
+- Flutter web build
+- Android release builds (AAB/APK)
+- iOS IPA build
 
-## 4) Next steps
-- Replace placeholder screens with real UI
-- Implement the remaining endpoints (see `lib/data/api/endpoints.dart`)
-- Add role-based gating (agent/admin) by reading your profile/verification tables
+Each workflow runs:
+1. `flutter pub get`
+2. `build_runner` code generation
+3. `flutter analyze`
+4. `flutter test`
+5. platform build
+
+## Notes
+- Listing management screens map to operator APIs (`/api/agent/listings`), so listing status updates are role-restricted in UI and backend.
+- Verification trust gate is fail-closed on unresolved status for protected routes.

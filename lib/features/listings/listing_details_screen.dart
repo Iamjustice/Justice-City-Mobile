@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/listing.dart';
+import '../../state/me_provider.dart';
 import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
 import 'listings_screen.dart';
@@ -31,9 +32,29 @@ class ListingDetailsScreen extends ConsumerStatefulWidget {
 class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   String? _statusDraft;
 
+  bool _isOperatorRole(String role) {
+    const allowed = <String>{'admin', 'agent', 'seller', 'owner'};
+    return allowed.contains(role.trim().toLowerCase());
+  }
+
+  String _viewerRole() {
+    return (ref.read(meProvider).valueOrNull?.role ?? '').trim().toLowerCase();
+  }
+
+  bool _canEditListingStatus() {
+    return _isOperatorRole(_viewerRole());
+  }
+
+  String _requesterRole() {
+    final role = (ref.read(meProvider).valueOrNull?.role ?? '').trim().toLowerCase();
+    const allowedRoles = <String>{'admin', 'agent', 'seller', 'buyer', 'owner', 'renter'};
+    return allowedRoles.contains(role) ? role : 'buyer';
+  }
+
   @override
   Widget build(BuildContext context) {
     final listing = widget.initial ?? ref.watch(listingByIdProvider(widget.listingId));
+    final canEditStatus = _canEditListingStatus();
 
     return Scaffold(
       appBar: AppBar(
@@ -72,7 +93,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                   [
                     if (listing.location != null) listing.location!,
                     if (listing.listingType != null) listing.listingType!,
-                  ].join(' • '),
+                  ].join(' - '),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 12),
@@ -107,7 +128,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                             children: [
                               const Text('Status', style: TextStyle(fontWeight: FontWeight.bold)),
                               const SizedBox(height: 6),
-                              Text(listing.status ?? '—'),
+                              Text(listing.status ?? '-'),
                             ],
                           ),
                         ),
@@ -168,13 +189,19 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
 
                 const Text('Update status', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                _statusPicker(listing),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: _statusDraft == null ? null : () => _applyStatus(listing),
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save status'),
-                ),
+                if (canEditStatus) ...[
+                  _statusPicker(listing),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: _statusDraft == null ? null : () => _applyStatus(listing),
+                    icon: const Icon(Icons.save),
+                    label: const Text('Save status'),
+                  ),
+                ] else ...[
+                  const Text(
+                    'Status updates are restricted to operator roles (admin, agent, seller, owner).',
+                  ),
+                ],
                 const SizedBox(height: 24),
 
                 const Divider(),
@@ -203,7 +230,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     final value = _statusDraft ?? current;
 
     return DropdownButtonFormField<String>(
-      value: allowed.contains(value) ? value : null,
+      key: ValueKey(value ?? 'empty'),
+      initialValue: allowed.contains(value) ? value : null,
       items: allowed.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
       decoration: const InputDecoration(border: OutlineInputBorder()),
       onChanged: (v) => setState(() => _statusDraft = v),
@@ -211,6 +239,14 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   }
 
   Future<void> _applyStatus(Listing listing) async {
+    if (!_canEditListingStatus()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You are not allowed to update listing status.')),
+      );
+      return;
+    }
+
     final status = _statusDraft;
     if (status == null) return;
 
@@ -256,7 +292,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
       final convoId = await chatRepo.upsertConversation(
         requesterId: requesterId,
         requesterName: requesterName,
-        requesterRole: 'buyer',
+        requesterRole: _requesterRole(),
         recipientName: 'Justice City Support',
         recipientRole: 'support',
         subject: listing.title,
@@ -285,7 +321,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('We’ll ask support to call you about "${listing.title}".'),
+            Text("We'll ask support to call you about \"${listing.title}\"."),
             const SizedBox(height: 12),
             TextField(
               controller: phoneCtrl,
@@ -300,7 +336,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               controller: noteCtrl,
               decoration: const InputDecoration(
                 labelText: 'Notes (optional)',
-                hintText: 'Best time to call / what you need…',
+                hintText: 'Best time to call / what you need...',
               ),
               minLines: 2,
               maxLines: 4,
@@ -379,7 +415,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                 controller: noteCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Notes (optional)',
-                  hintText: 'Preferred duration / special requests…',
+                  hintText: 'Preferred duration / special requests...',
                 ),
                 minLines: 2,
                 maxLines: 4,
@@ -431,7 +467,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
       final convoId = await chatRepo.upsertConversation(
         requesterId: session.userId,
         requesterName: session.email ?? 'User',
-        requesterRole: 'buyer',
+        requesterRole: _requesterRole(),
         recipientName: 'Justice City Support',
         recipientRole: 'support',
         subject: listing.title,
