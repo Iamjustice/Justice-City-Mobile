@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/repositories_providers.dart';
+import '../../state/me_provider.dart';
 import '../../state/verification_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -11,11 +12,17 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final verification = ref.watch(verificationStatusProvider);
+    final me = ref.watch(meProvider);
 
     final verified = verification.maybeWhen(
       data: (s) => s?.isVerified == true,
       orElse: () => false,
     );
+    final role = me.maybeWhen(
+      data: (u) => (u?.role ?? '').trim().toLowerCase(),
+      orElse: () => '',
+    );
+    final isOperator = role == 'admin' || role == 'agent' || role == 'seller' || role == 'owner';
 
     return Scaffold(
       appBar: AppBar(
@@ -88,6 +95,20 @@ class HomeScreen extends ConsumerWidget {
           ),
           const Divider(),
           ListTile(
+            title: const Text('Profile'),
+            subtitle: const Text('Personal information and addresses'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.go('/profile'),
+          ),
+          const Divider(),
+          ListTile(
+            title: const Text('Apply for hiring'),
+            subtitle: const Text('Professional partner onboarding'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.go('/hiring'),
+          ),
+          const Divider(),
+          ListTile(
             title: const Text('Open provider package'),
             subtitle: const Text('Use a provider-package token link'),
             trailing: const Icon(Icons.chevron_right),
@@ -99,13 +120,30 @@ class HomeScreen extends ConsumerWidget {
             },
           ),
           const Divider(),
+          ListTile(
+            title: const Text('Request callback'),
+            subtitle: const Text('Open support callback request form'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.go('/request-callback'),
+          ),
+          ListTile(
+            title: const Text('Schedule tour'),
+            subtitle: const Text('Open support tour scheduling form'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.go('/schedule-tour'),
+          ),
+          const Divider(),
 
           ListTile(
-            enabled: verified,
+            enabled: verified && isOperator,
             title: const Text('Listings'),
-            subtitle: const Text('Browse / manage listings'),
+            subtitle: Text(
+              isOperator
+                  ? 'Browse / manage listings'
+                  : 'Operator-only listings console (admin, agent, seller, owner)',
+            ),
             trailing: const Icon(Icons.chevron_right),
-            onTap: verified ? () => context.go('/listings') : null,
+            onTap: (verified && isOperator) ? () => context.go('/listings') : null,
           ),
           ListTile(
             enabled: verified,

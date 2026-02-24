@@ -41,12 +41,12 @@ class ListingsScreen extends ConsumerWidget {
               final subtitle = <String>[
                 if (l.location != null) l.location!,
                 if (l.status != null) l.status!,
-              ].join(' • ');
+              ].join(' - ');
 
               return ListTile(
                 leading: const Icon(Icons.home_work_outlined),
                 title: Text(l.title),
-                subtitle: Text(subtitle.isEmpty ? '—' : subtitle),
+                subtitle: Text(subtitle.isEmpty ? '-' : subtitle),
                 trailing: Text(l.price ?? ''),
                 onTap: () => context.go('/property/${l.id}', extra: l),
               );

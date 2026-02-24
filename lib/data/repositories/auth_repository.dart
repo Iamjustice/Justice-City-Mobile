@@ -36,7 +36,32 @@ class AuthRepository {
   }
 
   /// Optional Node API signup endpoint (if you use it to initialize profile rows / roles).
-  Future<void> nodeSignup({required Map<String, dynamic> payload}) async {
-    await _dio.post(ApiEndpoints.signup, data: payload);
+  Future<Map<String, dynamic>> nodeSignup({required Map<String, dynamic> payload}) async {
+    final res = await _dio.post(ApiEndpoints.signup, data: payload);
+    if (res.data is Map<String, dynamic>) {
+      return res.data as Map<String, dynamic>;
+    }
+    return <String, dynamic>{'raw': res.data};
+  }
+
+  Future<AppUser?> patchProfile({
+    String? fullName,
+    String? dateOfBirth,
+    String? homeAddress,
+    String? officeAddress,
+  }) async {
+    final res = await _dio.patch(
+      ApiEndpoints.patchProfile,
+      data: {
+        if (fullName != null) 'fullName': fullName,
+        if (dateOfBirth != null) 'dateOfBirth': dateOfBirth,
+        if (homeAddress != null) 'homeAddress': homeAddress,
+        if (officeAddress != null) 'officeAddress': officeAddress,
+      },
+    );
+    if (res.data is Map<String, dynamic>) {
+      return AppUser.fromJson(res.data as Map<String, dynamic>);
+    }
+    return null;
   }
 }

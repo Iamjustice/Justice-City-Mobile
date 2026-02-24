@@ -145,7 +145,7 @@ class _Body extends ConsumerWidget {
                         children: items
                             .map((a) => ListTile(
                                   title: Text(a.actionType),
-                                  subtitle: Text('Status: ${a.status} • Target: ${a.targetRole}'),
+                                  subtitle: Text('Status: ${a.status} - Target: ${a.targetRole}'),
                                 ))
                             .toList(),
                       ),
@@ -198,7 +198,7 @@ class _Body extends ConsumerWidget {
                         children: items
                             .map((d) => ListTile(
                                   title: Text('${d.status.toUpperCase()}: ${d.reason}'),
-                                  subtitle: Text(d.details ?? '—'),
+                                  subtitle: Text(d.details ?? '-'),
                                 ))
                             .toList(),
                       ),
@@ -245,13 +245,13 @@ class _TransactionCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Status: ${tx.status}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('Kind: ${tx.transactionKind} • Closing: ${tx.closingMode}'),
+          Text('Kind: ${tx.transactionKind} - Closing: ${tx.closingMode}'),
           const SizedBox(height: 6),
-          Text('Currency: ${tx.currency} • Principal: ${tx.principalAmount ?? 0}'),
+          Text('Currency: ${tx.currency} - Principal: ${tx.principalAmount ?? 0}'),
           const SizedBox(height: 6),
           Text('Inspection fee: ${tx.inspectionFeeAmount} (${tx.inspectionFeeRefundable ? 'refundable' : 'non-refundable'})'),
           const SizedBox(height: 6),
-          Text('Escrow ref: ${tx.escrowReference ?? '—'}'),
+          Text('Escrow ref: ${tx.escrowReference ?? '-'}'),
           const SizedBox(height: 6),
           Text('Updated: ${tx.updatedAt}'),
         ]),

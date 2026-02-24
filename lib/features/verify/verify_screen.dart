@@ -1,5 +1,9 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mime/mime.dart';
 
 import '../../state/session_provider.dart';
 import '../../state/verification_provider.dart';
@@ -17,8 +21,13 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   final _emailCodeController = TextEditingController();
   final _phoneController = TextEditingController();
   final _phoneCodeController = TextEditingController();
+  final _homeAddressController = TextEditingController();
+  final _officeAddressController = TextEditingController();
+  final _dobController = TextEditingController();
 
   bool _busy = false;
+  String? _uploadedIdentityFileName;
+  String? _uploadedUtilityBillFileName;
 
   @override
   void dispose() {
@@ -26,6 +35,9 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
     _emailCodeController.dispose();
     _phoneController.dispose();
     _phoneCodeController.dispose();
+    _homeAddressController.dispose();
+    _officeAddressController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
@@ -43,6 +55,62 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _pickAndUploadDocument({
+    required String userId,
+    required String documentType,
+    required String successLabel,
+  }) async {
+    final picked = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      withData: true,
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+    );
+
+    if (picked == null || picked.files.isEmpty) return;
+
+    final file = picked.files.first;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      throw StateError('Selected file is empty or unreadable.');
+    }
+
+    final homeAddress = _homeAddressController.text.trim();
+    if (homeAddress.isEmpty) {
+      throw StateError('Home address is required before uploading verification documents.');
+    }
+
+    final dateOfBirth = _dobController.text.trim();
+    if (dateOfBirth.isNotEmpty && !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateOfBirth)) {
+      throw StateError('Date of birth must be in YYYY-MM-DD format.');
+    }
+
+    final mimeType = lookupMimeType(file.name, headerBytes: bytes);
+    await ref.read(verificationRepositoryProvider).uploadDocument(
+          userId: userId,
+          documentType: documentType,
+          fileName: file.name,
+          contentBase64: base64Encode(bytes),
+          mimeType: mimeType,
+          fileSizeBytes: file.size,
+          homeAddress: homeAddress,
+          officeAddress: _officeAddressController.text.trim(),
+          dateOfBirth: dateOfBirth,
+        );
+
+    if (!mounted) return;
+    setState(() {
+      if (documentType == 'identity') {
+        _uploadedIdentityFileName = file.name;
+      } else if (documentType == 'utility_bill') {
+        _uploadedUtilityBillFileName = file.name;
+      }
+    });
+
+    _toast('$successLabel uploaded successfully.');
+    await ref.read(verificationStatusProvider.notifier).refresh();
   }
 
   @override
@@ -119,7 +187,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           ),
           const SizedBox(height: 12),
 
-          _SectionTitle('Step 1 — Email OTP'),
+          _SectionTitle('Step 1 - Email OTP'),
           _Field(_emailController, label: 'Email'),
           Row(
             children: [
@@ -167,7 +235,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           _Field(_emailCodeController, label: 'Email code'),
           const SizedBox(height: 16),
 
-          _SectionTitle('Step 2 — Phone OTP'),
+          _SectionTitle('Step 2 - Phone OTP'),
           _Field(_phoneController, label: 'Phone (E.164 e.g. +2349012345678)'),
           Row(
             children: [
@@ -215,7 +283,56 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           _Field(_phoneCodeController, label: 'SMS code'),
           const SizedBox(height: 16),
 
-          _SectionTitle('Step 3 — Smile ID submission'),
+          _SectionTitle('Step 3 - Address + documents'),
+          _Field(_homeAddressController, label: 'Home address (required)'),
+          _Field(_officeAddressController, label: 'Office address (optional)'),
+          _Field(_dobController, label: 'Date of birth (YYYY-MM-DD, optional)'),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: (_busy || userId.isEmpty)
+                      ? null
+                      : () => _run(() async {
+                            await _pickAndUploadDocument(
+                              userId: userId,
+                              documentType: 'identity',
+                              successLabel: 'Identity document',
+                            );
+                          }),
+                  icon: const Icon(Icons.badge_outlined),
+                  label: const Text('Upload ID Document'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: (_busy || userId.isEmpty)
+                      ? null
+                      : () => _run(() async {
+                            await _pickAndUploadDocument(
+                              userId: userId,
+                              documentType: 'utility_bill',
+                              successLabel: 'Utility bill',
+                            );
+                          }),
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: const Text('Upload Utility Bill'),
+                ),
+              ),
+            ],
+          ),
+          if (_uploadedIdentityFileName != null || _uploadedUtilityBillFileName != null) ...[
+            const SizedBox(height: 8),
+            if (_uploadedIdentityFileName != null)
+              Text('ID: $_uploadedIdentityFileName'),
+            if (_uploadedUtilityBillFileName != null)
+              Text('Utility bill: $_uploadedUtilityBillFileName'),
+          ],
+          const SizedBox(height: 16),
+
+          _SectionTitle('Step 4 - Smile ID submission'),
           ElevatedButton(
             onPressed: (_busy || userId.isEmpty)
                 ? null

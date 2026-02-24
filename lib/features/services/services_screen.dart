@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../state/me_provider.dart';
 import '../../state/session_provider.dart';
 import '../../state/repositories_providers.dart';
 
@@ -88,7 +89,7 @@ class ServicesScreen extends ConsumerWidget {
                             final token = await _promptToken(context);
                             if (token != null && token.isNotEmpty) {
                               if (!context.mounted) return;
-                              context.go('/provider-package/$token');
+                              context.go('/provider-package/${Uri.encodeComponent(token)}');
                             }
                           },
                             icon: const Icon(Icons.link),
@@ -141,12 +142,15 @@ class ServicesScreen extends ConsumerWidget {
     }
 
     final chatRepo = ref.read(chatRepositoryProvider);
+    final role = (ref.read(meProvider).valueOrNull?.role ?? '').trim().toLowerCase();
+    const allowedRoles = <String>{'admin', 'agent', 'seller', 'buyer', 'owner', 'renter'};
+    final requesterRole = allowedRoles.contains(role) ? role : 'buyer';
 
     try {
       final convoId = await chatRepo.upsertConversation(
         requesterId: session.userId,
         requesterName: session.email ?? 'User',
-        requesterRole: 'buyer',
+        requesterRole: requesterRole,
         recipientName: 'Justice City Support',
         recipientRole: 'support',
         subject: name,

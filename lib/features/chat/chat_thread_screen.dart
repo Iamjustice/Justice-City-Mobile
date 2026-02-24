@@ -216,7 +216,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                       minLines: 1,
                       maxLines: 4,
                       decoration: const InputDecoration(
-                        hintText: 'Message…',
+                        hintText: 'Message...',
                         border: OutlineInputBorder(),
                       ),
                     ),

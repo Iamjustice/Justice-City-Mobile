@@ -243,7 +243,7 @@ class _VerificationsTab extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: Text('$user • $type', style: const TextStyle(fontWeight: FontWeight.w600))),
+                        Expanded(child: Text('$user - $type', style: const TextStyle(fontWeight: FontWeight.w600))),
                         Text(status),
                       ],
                     ),
@@ -255,9 +255,9 @@ class _VerificationsTab extends ConsumerWidget {
                       const SizedBox(height: 4),
                       ...docs.take(4).map((d) {
                         final dm = d is Map ? Map<String, dynamic>.from(d) : <String, dynamic>{};
-                        return Text('• ${(dm['name'] ?? '').toString()}  ${(dm['url'] ?? '').toString()}');
+                        return Text('- ${(dm['name'] ?? '').toString()}  ${(dm['url'] ?? '').toString()}');
                       }),
-                      if (docs.length > 4) const Text('…'),
+                      if (docs.length > 4) const Text('...'),
                       const SizedBox(height: 8),
                     ],
                     Row(
@@ -386,9 +386,9 @@ class _FlaggedTab extends ConsumerWidget {
                       const SizedBox(height: 4),
                       ...comments.take(3).map((c) {
                         final cm = c is Map ? Map<String, dynamic>.from(c) : <String, dynamic>{};
-                        return Text('• ${(cm['problemTag'] ?? '').toString()}: ${(cm['comment'] ?? '').toString()}');
+                        return Text('- ${(cm['problemTag'] ?? '').toString()}: ${(cm['comment'] ?? '').toString()}');
                       }),
-                      if (comments.length > 3) const Text('…'),
+                      if (comments.length > 3) const Text('...'),
                     ],
                   ],
                 ),

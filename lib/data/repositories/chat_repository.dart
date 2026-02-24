@@ -136,6 +136,10 @@ Future<List<ChatMessage>> getMessages({
     if (data is List) {
       return data.map((e) => Map<String, dynamic>.from(e)).toList();
     }
+    if (data is Map && data['attachments'] is List) {
+      return (data['attachments'] as List).map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+    // Backward compatibility in case older servers return "uploaded".
     if (data is Map && data['uploaded'] is List) {
       return (data['uploaded'] as List).map((e) => Map<String, dynamic>.from(e)).toList();
     }

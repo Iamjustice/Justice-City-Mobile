@@ -313,11 +313,11 @@ class _BuyerDashboardShell extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           ListTile(
-            leading: const Icon(Icons.home_work_outlined),
-            title: const Text('Browse Listings'),
-            subtitle: const Text('Explore available properties'),
+            leading: const Icon(Icons.phone_forwarded_outlined),
+            title: const Text('Request Callback'),
+            subtitle: const Text('Contact support about a property'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.go('/listings'),
+            onTap: () => context.go('/request-callback'),
           ),
           const Divider(),
           ListTile(
@@ -432,7 +432,7 @@ class _ListingTile extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.home_work_outlined),
         title: Text(listing.title),
-        subtitle: Text('$location • $status'),
+        subtitle: Text('$location - $status'),
         trailing: Text(price),
         onTap: () => context.go('/property/${listing.id}', extra: listing),
       ),

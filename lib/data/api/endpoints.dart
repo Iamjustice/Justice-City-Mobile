@@ -36,6 +36,7 @@ class ApiEndpoints {
   static const phoneOtpCheck = '/api/verification/phone/check';
   static const emailOtpSend = '/api/verification/email/send';
   static const emailOtpCheck = '/api/verification/email/check';
+  static const verificationDocumentsUpload = '/api/verification/documents/upload';
   static const smileIdSubmit = '/api/verification/smile-id';
 
 
@@ -53,5 +54,6 @@ class ApiEndpoints {
   // Services
   static const serviceOfferings = '/api/service-offerings';
   static String providerPackage(String token) => '/api/provider-package/$token';
+  static const hiringApplications = '/api/hiring/applications';
 
 }
