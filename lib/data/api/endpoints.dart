@@ -62,6 +62,10 @@ class ApiEndpoints {
       '/api/transactions/$transactionId/status';
   static String transactionActions(String transactionId) =>
       '/api/transactions/$transactionId/actions';
+  static String transactionPayoutClaim(String transactionId) =>
+      '/api/transactions/$transactionId/payout-claim';
+  static String transactionRatings(String transactionId) =>
+      '/api/transactions/$transactionId/ratings';
   static String transactionDisputes(String transactionId) =>
       '/api/transactions/$transactionId/disputes';
   static const openDisputes = '/api/disputes/open';
