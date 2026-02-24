@@ -21,6 +21,8 @@ Listing _$ListingFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Listing {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _asString)
+  String? get agentId => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
   String? get status => throw _privateConstructorUsedError;
@@ -42,6 +44,20 @@ mixin _$Listing {
   int? get inquiries => throw _privateConstructorUsedError;
   @JsonKey(name: 'coverImageUrl', fromJson: _asString)
   String? get coverImageUrl => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _asString)
+  String? get date => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _asDouble)
+  double? get dealAmount => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _asDouble)
+  double? get totalCommission => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _asDouble)
+  double? get agentCommission => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _asDouble)
+  double? get companyCommission => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _asString)
+  String? get agentPayoutStatus => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _asString)
+  String? get closedAt => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _asDate)
   DateTime? get createdAt => throw _privateConstructorUsedError;
 
@@ -61,6 +77,7 @@ abstract class $ListingCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
+      @JsonKey(fromJson: _asString) String? agentId,
       String title,
       String? description,
       String? status,
@@ -72,6 +89,13 @@ abstract class $ListingCopyWith<$Res> {
       @JsonKey(fromJson: _asInt) int? inquiries,
       @JsonKey(name: 'coverImageUrl', fromJson: _asString)
       String? coverImageUrl,
+      @JsonKey(fromJson: _asString) String? date,
+      @JsonKey(fromJson: _asDouble) double? dealAmount,
+      @JsonKey(fromJson: _asDouble) double? totalCommission,
+      @JsonKey(fromJson: _asDouble) double? agentCommission,
+      @JsonKey(fromJson: _asDouble) double? companyCommission,
+      @JsonKey(fromJson: _asString) String? agentPayoutStatus,
+      @JsonKey(fromJson: _asString) String? closedAt,
       @JsonKey(fromJson: _asDate) DateTime? createdAt});
 }
 
@@ -91,6 +115,7 @@ class _$ListingCopyWithImpl<$Res, $Val extends Listing>
   @override
   $Res call({
     Object? id = null,
+    Object? agentId = freezed,
     Object? title = null,
     Object? description = freezed,
     Object? status = freezed,
@@ -101,6 +126,13 @@ class _$ListingCopyWithImpl<$Res, $Val extends Listing>
     Object? views = freezed,
     Object? inquiries = freezed,
     Object? coverImageUrl = freezed,
+    Object? date = freezed,
+    Object? dealAmount = freezed,
+    Object? totalCommission = freezed,
+    Object? agentCommission = freezed,
+    Object? companyCommission = freezed,
+    Object? agentPayoutStatus = freezed,
+    Object? closedAt = freezed,
     Object? createdAt = freezed,
   }) {
     return _then(_value.copyWith(
@@ -108,6 +140,10 @@ class _$ListingCopyWithImpl<$Res, $Val extends Listing>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+      agentId: freezed == agentId
+          ? _value.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String?,
       title: null == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
@@ -147,6 +183,34 @@ class _$ListingCopyWithImpl<$Res, $Val extends Listing>
       coverImageUrl: freezed == coverImageUrl
           ? _value.coverImageUrl
           : coverImageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      date: freezed == date
+          ? _value.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dealAmount: freezed == dealAmount
+          ? _value.dealAmount
+          : dealAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      totalCommission: freezed == totalCommission
+          ? _value.totalCommission
+          : totalCommission // ignore: cast_nullable_to_non_nullable
+              as double?,
+      agentCommission: freezed == agentCommission
+          ? _value.agentCommission
+          : agentCommission // ignore: cast_nullable_to_non_nullable
+              as double?,
+      companyCommission: freezed == companyCommission
+          ? _value.companyCommission
+          : companyCommission // ignore: cast_nullable_to_non_nullable
+              as double?,
+      agentPayoutStatus: freezed == agentPayoutStatus
+          ? _value.agentPayoutStatus
+          : agentPayoutStatus // ignore: cast_nullable_to_non_nullable
+              as String?,
+      closedAt: freezed == closedAt
+          ? _value.closedAt
+          : closedAt // ignore: cast_nullable_to_non_nullable
               as String?,
       createdAt: freezed == createdAt
           ? _value.createdAt
@@ -165,6 +229,7 @@ abstract class _$$ListingImplCopyWith<$Res> implements $ListingCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
+      @JsonKey(fromJson: _asString) String? agentId,
       String title,
       String? description,
       String? status,
@@ -176,6 +241,13 @@ abstract class _$$ListingImplCopyWith<$Res> implements $ListingCopyWith<$Res> {
       @JsonKey(fromJson: _asInt) int? inquiries,
       @JsonKey(name: 'coverImageUrl', fromJson: _asString)
       String? coverImageUrl,
+      @JsonKey(fromJson: _asString) String? date,
+      @JsonKey(fromJson: _asDouble) double? dealAmount,
+      @JsonKey(fromJson: _asDouble) double? totalCommission,
+      @JsonKey(fromJson: _asDouble) double? agentCommission,
+      @JsonKey(fromJson: _asDouble) double? companyCommission,
+      @JsonKey(fromJson: _asString) String? agentPayoutStatus,
+      @JsonKey(fromJson: _asString) String? closedAt,
       @JsonKey(fromJson: _asDate) DateTime? createdAt});
 }
 
@@ -193,6 +265,7 @@ class __$$ListingImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? agentId = freezed,
     Object? title = null,
     Object? description = freezed,
     Object? status = freezed,
@@ -203,6 +276,13 @@ class __$$ListingImplCopyWithImpl<$Res>
     Object? views = freezed,
     Object? inquiries = freezed,
     Object? coverImageUrl = freezed,
+    Object? date = freezed,
+    Object? dealAmount = freezed,
+    Object? totalCommission = freezed,
+    Object? agentCommission = freezed,
+    Object? companyCommission = freezed,
+    Object? agentPayoutStatus = freezed,
+    Object? closedAt = freezed,
     Object? createdAt = freezed,
   }) {
     return _then(_$ListingImpl(
@@ -210,6 +290,10 @@ class __$$ListingImplCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+      agentId: freezed == agentId
+          ? _value.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String?,
       title: null == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
@@ -250,6 +334,34 @@ class __$$ListingImplCopyWithImpl<$Res>
           ? _value.coverImageUrl
           : coverImageUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      date: freezed == date
+          ? _value.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dealAmount: freezed == dealAmount
+          ? _value.dealAmount
+          : dealAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      totalCommission: freezed == totalCommission
+          ? _value.totalCommission
+          : totalCommission // ignore: cast_nullable_to_non_nullable
+              as double?,
+      agentCommission: freezed == agentCommission
+          ? _value.agentCommission
+          : agentCommission // ignore: cast_nullable_to_non_nullable
+              as double?,
+      companyCommission: freezed == companyCommission
+          ? _value.companyCommission
+          : companyCommission // ignore: cast_nullable_to_non_nullable
+              as double?,
+      agentPayoutStatus: freezed == agentPayoutStatus
+          ? _value.agentPayoutStatus
+          : agentPayoutStatus // ignore: cast_nullable_to_non_nullable
+              as String?,
+      closedAt: freezed == closedAt
+          ? _value.closedAt
+          : closedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
       createdAt: freezed == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -263,6 +375,7 @@ class __$$ListingImplCopyWithImpl<$Res>
 class _$ListingImpl implements _Listing {
   const _$ListingImpl(
       {required this.id,
+      @JsonKey(fromJson: _asString) this.agentId,
       required this.title,
       this.description,
       this.status,
@@ -273,6 +386,13 @@ class _$ListingImpl implements _Listing {
       @JsonKey(fromJson: _asInt) this.views,
       @JsonKey(fromJson: _asInt) this.inquiries,
       @JsonKey(name: 'coverImageUrl', fromJson: _asString) this.coverImageUrl,
+      @JsonKey(fromJson: _asString) this.date,
+      @JsonKey(fromJson: _asDouble) this.dealAmount,
+      @JsonKey(fromJson: _asDouble) this.totalCommission,
+      @JsonKey(fromJson: _asDouble) this.agentCommission,
+      @JsonKey(fromJson: _asDouble) this.companyCommission,
+      @JsonKey(fromJson: _asString) this.agentPayoutStatus,
+      @JsonKey(fromJson: _asString) this.closedAt,
       @JsonKey(fromJson: _asDate) this.createdAt});
 
   factory _$ListingImpl.fromJson(Map<String, dynamic> json) =>
@@ -280,6 +400,9 @@ class _$ListingImpl implements _Listing {
 
   @override
   final String id;
+  @override
+  @JsonKey(fromJson: _asString)
+  final String? agentId;
   @override
   final String title;
   @override
@@ -312,12 +435,33 @@ class _$ListingImpl implements _Listing {
   @JsonKey(name: 'coverImageUrl', fromJson: _asString)
   final String? coverImageUrl;
   @override
+  @JsonKey(fromJson: _asString)
+  final String? date;
+  @override
+  @JsonKey(fromJson: _asDouble)
+  final double? dealAmount;
+  @override
+  @JsonKey(fromJson: _asDouble)
+  final double? totalCommission;
+  @override
+  @JsonKey(fromJson: _asDouble)
+  final double? agentCommission;
+  @override
+  @JsonKey(fromJson: _asDouble)
+  final double? companyCommission;
+  @override
+  @JsonKey(fromJson: _asString)
+  final String? agentPayoutStatus;
+  @override
+  @JsonKey(fromJson: _asString)
+  final String? closedAt;
+  @override
   @JsonKey(fromJson: _asDate)
   final DateTime? createdAt;
 
   @override
   String toString() {
-    return 'Listing(id: $id, title: $title, description: $description, status: $status, listingType: $listingType, location: $location, price: $price, priceSuffix: $priceSuffix, views: $views, inquiries: $inquiries, coverImageUrl: $coverImageUrl, createdAt: $createdAt)';
+    return 'Listing(id: $id, agentId: $agentId, title: $title, description: $description, status: $status, listingType: $listingType, location: $location, price: $price, priceSuffix: $priceSuffix, views: $views, inquiries: $inquiries, coverImageUrl: $coverImageUrl, date: $date, dealAmount: $dealAmount, totalCommission: $totalCommission, agentCommission: $agentCommission, companyCommission: $companyCommission, agentPayoutStatus: $agentPayoutStatus, closedAt: $closedAt, createdAt: $createdAt)';
   }
 
   @override
@@ -326,6 +470,7 @@ class _$ListingImpl implements _Listing {
         (other.runtimeType == runtimeType &&
             other is _$ListingImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.agentId, agentId) || other.agentId == agentId) &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.description, description) ||
                 other.description == description) &&
@@ -342,26 +487,48 @@ class _$ListingImpl implements _Listing {
                 other.inquiries == inquiries) &&
             (identical(other.coverImageUrl, coverImageUrl) ||
                 other.coverImageUrl == coverImageUrl) &&
+            (identical(other.date, date) || other.date == date) &&
+            (identical(other.dealAmount, dealAmount) ||
+                other.dealAmount == dealAmount) &&
+            (identical(other.totalCommission, totalCommission) ||
+                other.totalCommission == totalCommission) &&
+            (identical(other.agentCommission, agentCommission) ||
+                other.agentCommission == agentCommission) &&
+            (identical(other.companyCommission, companyCommission) ||
+                other.companyCommission == companyCommission) &&
+            (identical(other.agentPayoutStatus, agentPayoutStatus) ||
+                other.agentPayoutStatus == agentPayoutStatus) &&
+            (identical(other.closedAt, closedAt) ||
+                other.closedAt == closedAt) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      title,
-      description,
-      status,
-      listingType,
-      location,
-      price,
-      priceSuffix,
-      views,
-      inquiries,
-      coverImageUrl,
-      createdAt);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        agentId,
+        title,
+        description,
+        status,
+        listingType,
+        location,
+        price,
+        priceSuffix,
+        views,
+        inquiries,
+        coverImageUrl,
+        date,
+        dealAmount,
+        totalCommission,
+        agentCommission,
+        companyCommission,
+        agentPayoutStatus,
+        closedAt,
+        createdAt
+      ]);
 
   /// Create a copy of Listing
   /// with the given fields replaced by the non-null parameter values.
@@ -382,6 +549,7 @@ class _$ListingImpl implements _Listing {
 abstract class _Listing implements Listing {
   const factory _Listing(
       {required final String id,
+      @JsonKey(fromJson: _asString) final String? agentId,
       required final String title,
       final String? description,
       final String? status,
@@ -395,12 +563,22 @@ abstract class _Listing implements Listing {
       @JsonKey(fromJson: _asInt) final int? inquiries,
       @JsonKey(name: 'coverImageUrl', fromJson: _asString)
       final String? coverImageUrl,
+      @JsonKey(fromJson: _asString) final String? date,
+      @JsonKey(fromJson: _asDouble) final double? dealAmount,
+      @JsonKey(fromJson: _asDouble) final double? totalCommission,
+      @JsonKey(fromJson: _asDouble) final double? agentCommission,
+      @JsonKey(fromJson: _asDouble) final double? companyCommission,
+      @JsonKey(fromJson: _asString) final String? agentPayoutStatus,
+      @JsonKey(fromJson: _asString) final String? closedAt,
       @JsonKey(fromJson: _asDate) final DateTime? createdAt}) = _$ListingImpl;
 
   factory _Listing.fromJson(Map<String, dynamic> json) = _$ListingImpl.fromJson;
 
   @override
   String get id;
+  @override
+  @JsonKey(fromJson: _asString)
+  String? get agentId;
   @override
   String get title;
   @override
@@ -432,6 +610,27 @@ abstract class _Listing implements Listing {
   @override
   @JsonKey(name: 'coverImageUrl', fromJson: _asString)
   String? get coverImageUrl;
+  @override
+  @JsonKey(fromJson: _asString)
+  String? get date;
+  @override
+  @JsonKey(fromJson: _asDouble)
+  double? get dealAmount;
+  @override
+  @JsonKey(fromJson: _asDouble)
+  double? get totalCommission;
+  @override
+  @JsonKey(fromJson: _asDouble)
+  double? get agentCommission;
+  @override
+  @JsonKey(fromJson: _asDouble)
+  double? get companyCommission;
+  @override
+  @JsonKey(fromJson: _asString)
+  String? get agentPayoutStatus;
+  @override
+  @JsonKey(fromJson: _asString)
+  String? get closedAt;
   @override
   @JsonKey(fromJson: _asDate)
   DateTime? get createdAt;
