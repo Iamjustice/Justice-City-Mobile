@@ -384,7 +384,8 @@ class _StatusCard extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _statuses.contains(toStatus) ? toStatus : _statuses.first,
+            initialValue:
+                _statuses.contains(toStatus) ? toStatus : _statuses.first,
             items: _statuses
                 .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                 .toList(),
