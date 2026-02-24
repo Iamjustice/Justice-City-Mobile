@@ -19,21 +19,45 @@ class ChatRepository {
       ApiEndpoints.listConversations,
       queryParameters: {
         'viewerId': viewerId,
-        if (viewerRole != null && viewerRole.isNotEmpty) 'viewerRole': viewerRole,
-        if (viewerName != null && viewerName.isNotEmpty) 'viewerName': viewerName,
+        if (viewerRole != null && viewerRole.isNotEmpty)
+          'viewerRole': viewerRole,
+        if (viewerName != null && viewerName.isNotEmpty)
+          'viewerName': viewerName,
       },
     );
     final data = res.data;
     if (data is List) {
-      return data.map((e) => ChatConversation.fromJson(Map<String, dynamic>.from(e))).toList();
+      return data
+          .map((e) => ChatConversation.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     }
     if (data is Map && data['items'] is List) {
-      return (data['items'] as List).map((e) => ChatConversation.fromJson(Map<String, dynamic>.from(e))).toList();
+      return (data['items'] as List)
+          .map((e) => ChatConversation.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     }
     return const [];
   }
 
-  
+  Future<List<UserChatCard>> listChatCards({
+    required String userId,
+  }) async {
+    final encodedUserId = Uri.encodeComponent(userId);
+    final res = await _dio.get(ApiEndpoints.chatCards(encodedUserId));
+    final data = res.data;
+    if (data is List) {
+      return data
+          .map((e) => UserChatCard.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    if (data is Map && data['items'] is List) {
+      return (data['items'] as List)
+          .map((e) => UserChatCard.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    return const [];
+  }
+
   Future<String> upsertConversation({
     required String requesterId,
     required String requesterName,
@@ -52,15 +76,20 @@ class ChatRepository {
       data: {
         'requesterId': requesterId,
         'requesterName': requesterName,
-        if (requesterRole != null && requesterRole.isNotEmpty) 'requesterRole': requesterRole,
-        if (recipientId != null && recipientId.isNotEmpty) 'recipientId': recipientId,
+        if (requesterRole != null && requesterRole.isNotEmpty)
+          'requesterRole': requesterRole,
+        if (recipientId != null && recipientId.isNotEmpty)
+          'recipientId': recipientId,
         'recipientName': recipientName,
-        if (recipientRole != null && recipientRole.isNotEmpty) 'recipientRole': recipientRole,
+        if (recipientRole != null && recipientRole.isNotEmpty)
+          'recipientRole': recipientRole,
         if (subject != null && subject.isNotEmpty) 'subject': subject,
         if (listingId != null && listingId.isNotEmpty) 'listingId': listingId,
-        if (initialMessage != null && initialMessage.isNotEmpty) 'initialMessage': initialMessage,
+        if (initialMessage != null && initialMessage.isNotEmpty)
+          'initialMessage': initialMessage,
         'conversationScope': conversationScope,
-        if (serviceCode != null && serviceCode.isNotEmpty) 'serviceCode': serviceCode,
+        if (serviceCode != null && serviceCode.isNotEmpty)
+          'serviceCode': serviceCode,
       },
     );
 
@@ -73,7 +102,7 @@ class ChatRepository {
     throw Exception('Failed to upsert conversation');
   }
 
-Future<List<ChatMessage>> getMessages({
+  Future<List<ChatMessage>> getMessages({
     required String conversationId,
     required String viewerId,
   }) async {
@@ -83,10 +112,14 @@ Future<List<ChatMessage>> getMessages({
     );
     final data = res.data;
     if (data is List) {
-      return data.map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e))).toList();
+      return data
+          .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     }
     if (data is Map && data['items'] is List) {
-      return (data['items'] as List).map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e))).toList();
+      return (data['items'] as List)
+          .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     }
     return const [];
   }
@@ -106,11 +139,13 @@ Future<List<ChatMessage>> getMessages({
       data: {
         'senderId': senderId,
         'senderName': senderName,
-        if (senderRole != null && senderRole.isNotEmpty) 'senderRole': senderRole,
+        if (senderRole != null && senderRole.isNotEmpty)
+          'senderRole': senderRole,
         'messageType': messageType,
         'content': content,
         if (metadata != null) 'metadata': metadata,
-        if (attachments != null && attachments.isNotEmpty) 'attachments': attachments,
+        if (attachments != null && attachments.isNotEmpty)
+          'attachments': attachments,
       },
     );
     return ChatMessage.fromJson(Map<String, dynamic>.from(res.data));
@@ -137,13 +172,82 @@ Future<List<ChatMessage>> getMessages({
       return data.map((e) => Map<String, dynamic>.from(e)).toList();
     }
     if (data is Map && data['attachments'] is List) {
-      return (data['attachments'] as List).map((e) => Map<String, dynamic>.from(e)).toList();
+      return (data['attachments'] as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
     // Backward compatibility in case older servers return "uploaded".
     if (data is Map && data['uploaded'] is List) {
-      return (data['uploaded'] as List).map((e) => Map<String, dynamic>.from(e)).toList();
+      return (data['uploaded'] as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
     return const [];
+  }
+}
+
+class UserChatCard {
+  UserChatCard({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.problemTag,
+    required this.status,
+    required this.createdAt,
+    this.conversationId,
+    this.transactionId,
+    this.metadata,
+  });
+
+  final String id;
+  final String title;
+  final String message;
+  final String problemTag;
+  final String status;
+  final String createdAt;
+  final String? conversationId;
+  final String? transactionId;
+  final Map<String, dynamic>? metadata;
+
+  bool get isUnread => status.trim().toLowerCase() == 'unread';
+
+  factory UserChatCard.fromJson(Map<String, dynamic> json) {
+    String? asString(dynamic value) {
+      if (value == null) return null;
+      final parsed = value.toString().trim();
+      return parsed.isEmpty ? null : parsed;
+    }
+
+    final metadata = json['metadata'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(json['metadata'] as Map<String, dynamic>)
+        : json['metadata'] is Map
+            ? Map<String, dynamic>.from(json['metadata'] as Map)
+            : null;
+
+    final conversationId = asString(json['conversationId']) ??
+        asString(json['conversation_id']) ??
+        asString(metadata?['conversationId']) ??
+        asString(metadata?['conversation_id']);
+
+    final transactionId = asString(json['transactionId']) ??
+        asString(json['transaction_id']) ??
+        asString(metadata?['transactionId']) ??
+        asString(metadata?['transaction_id']);
+
+    return UserChatCard(
+      id: asString(json['id']) ?? '',
+      title: asString(json['title']) ?? 'Issue update',
+      message: asString(json['message']) ?? '',
+      problemTag: asString(json['problemTag']) ??
+          asString(json['problem_tag']) ??
+          'General',
+      status: asString(json['status']) ?? 'unread',
+      createdAt:
+          asString(json['createdAt']) ?? asString(json['created_at']) ?? '',
+      conversationId: conversationId,
+      transactionId: transactionId,
+      metadata: metadata,
+    );
   }
 }
 
