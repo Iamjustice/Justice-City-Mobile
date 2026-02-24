@@ -23,6 +23,17 @@ class ServicesScreen extends ConsumerWidget {
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(serviceOfferingsProvider),
           ),
+          IconButton(
+            icon: const Icon(Icons.link),
+            tooltip: 'Open provider package',
+            onPressed: () async {
+              final token = await _promptToken(context);
+              if (token != null && token.isNotEmpty) {
+                if (!context.mounted) return;
+                context.go('/provider-package/${Uri.encodeComponent(token)}');
+              }
+            },
+          ),
         ],
       ),
       body: offerings.when(
@@ -73,7 +84,6 @@ class ServicesScreen extends ConsumerWidget {
                         'Code: ${s.code}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 10,
@@ -86,12 +96,13 @@ class ServicesScreen extends ConsumerWidget {
                           ),
                           OutlinedButton.icon(
                             onPressed: () async {
-                            final token = await _promptToken(context);
-                            if (token != null && token.isNotEmpty) {
-                              if (!context.mounted) return;
-                              context.go('/provider-package/${Uri.encodeComponent(token)}');
-                            }
-                          },
+                              final token = await _promptToken(context);
+                              if (token != null && token.isNotEmpty) {
+                                if (!context.mounted) return;
+                                context.go(
+                                    '/provider-package/${Uri.encodeComponent(token)}');
+                              }
+                            },
                             icon: const Icon(Icons.link),
                             label: const Text('Open provider package'),
                           ),
@@ -113,8 +124,8 @@ class ServicesScreen extends ConsumerWidget {
     );
   }
 
-
-  Future<void> _startServiceChat(BuildContext context, WidgetRef ref, dynamic offering) async {
+  Future<void> _startServiceChat(
+      BuildContext context, WidgetRef ref, dynamic offering) async {
     final session = ref.read(sessionProvider);
     if (session == null) {
       context.go('/auth');
@@ -138,12 +149,21 @@ class ServicesScreen extends ConsumerWidget {
       initialMessage =
           'Hello! I saw you are interested in our professional services. When is your move-in date and what\'s the location of the new building?';
     } else {
-      initialMessage = 'Hello! I saw you were interested in our $name. How can we help you today?';
+      initialMessage =
+          'Hello! I saw you were interested in our $name. How can we help you today?';
     }
 
     final chatRepo = ref.read(chatRepositoryProvider);
-    final role = (ref.read(meProvider).valueOrNull?.role ?? '').trim().toLowerCase();
-    const allowedRoles = <String>{'admin', 'agent', 'seller', 'buyer', 'owner', 'renter'};
+    final role =
+        (ref.read(meProvider).valueOrNull?.role ?? '').trim().toLowerCase();
+    const allowedRoles = <String>{
+      'admin',
+      'agent',
+      'seller',
+      'buyer',
+      'owner',
+      'renter'
+    };
     final requesterRole = allowedRoles.contains(role) ? role : 'buyer';
 
     try {

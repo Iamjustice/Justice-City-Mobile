@@ -74,6 +74,12 @@ class ApiEndpoints {
 
   // Services
   static const serviceOfferings = '/api/service-offerings';
+  static const servicePdfJobs = '/api/service-pdf-jobs';
+  static const providerLinks = '/api/provider-links';
+  static String providerLinksByConversation(String conversationId) =>
+      '/api/provider-links/by-conversation/$conversationId';
+  static String revokeProviderLink(String linkId) =>
+      '/api/provider-links/$linkId/revoke';
   static String providerPackage(String token) => '/api/provider-package/$token';
   static const hiringApplications = '/api/hiring/applications';
 }
