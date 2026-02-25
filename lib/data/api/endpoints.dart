@@ -25,6 +25,8 @@ class ApiEndpoints {
       '/api/chat/conversations/$conversationId/messages';
   static String attachments(String conversationId) =>
       '/api/chat/conversations/$conversationId/attachments';
+  static String chatActionResolve(String actionId) =>
+      '/api/chat-actions/$actionId/resolve';
 
   // Admin / dashboard
   static const adminDashboard = '/api/admin/dashboard';
@@ -75,6 +77,7 @@ class ApiEndpoints {
   // Services
   static const serviceOfferings = '/api/service-offerings';
   static const servicePdfJobs = '/api/service-pdf-jobs';
+  static const servicePdfJobsProcessNext = '/api/service-pdf-jobs/process-next';
   static const providerLinks = '/api/provider-links';
   static String providerLinksByConversation(String conversationId) =>
       '/api/provider-links/by-conversation/$conversationId';

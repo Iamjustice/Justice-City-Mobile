@@ -125,6 +125,54 @@ class TransactionRepository {
         .toList();
   }
 
+  Future<TransactionActionResolveResult> resolveAction({
+    required String actionId,
+    required String actorUserId,
+    required String actorRole,
+    required String decision,
+    String? actorName,
+    Map<String, dynamic>? payload,
+  }) async {
+    try {
+      final res = await _dio.post(
+        ApiEndpoints.chatActionResolve(actionId),
+        data: {
+          'actorUserId': actorUserId,
+          'actorRole': actorRole,
+          if (actorName != null && actorName.trim().isNotEmpty)
+            'actorName': actorName.trim(),
+          'decision': decision,
+          if (payload != null) 'payload': payload,
+        },
+      );
+
+      final map = res.data is Map
+          ? Map<String, dynamic>.from(res.data as Map)
+          : <String, dynamic>{};
+      final actionRaw = map['action'] is Map
+          ? Map<String, dynamic>.from(map['action'] as Map)
+          : <String, dynamic>{};
+      final txRaw = map['transaction'] is Map
+          ? Map<String, dynamic>.from(map['transaction'] as Map)
+          : <String, dynamic>{};
+      final warnings = (map['warnings'] as List?)
+              ?.map((e) => e.toString())
+              .where((e) => e.trim().isNotEmpty)
+              .toList() ??
+          const <String>[];
+
+      return TransactionActionResolveResult(
+        action: ChatAction.fromJson(actionRaw),
+        transaction: Transaction.fromJson(txRaw),
+        warnings: warnings,
+      );
+    } on DioException catch (e) {
+      throw Exception(
+        _formatApiError(e, fallback: 'Failed to resolve action.'),
+      );
+    }
+  }
+
   Future<Dispute> openDispute({
     required String transactionId,
     required String conversationId,
@@ -144,7 +192,13 @@ class TransactionRepository {
       'openedByName': openedByName,
       'openedByRole': openedByRole,
     });
-    return Dispute.fromJson(Map<String, dynamic>.from(res.data as Map));
+    final map = res.data is Map
+        ? Map<String, dynamic>.from(res.data as Map)
+        : <String, dynamic>{};
+    final disputeRaw = map['dispute'] is Map
+        ? Map<String, dynamic>.from(map['dispute'] as Map)
+        : map;
+    return Dispute.fromJson(disputeRaw);
   }
 
   Future<Dispute> resolveDispute({
@@ -163,7 +217,13 @@ class TransactionRepository {
       'resolvedByUserId': resolvedByUserId,
       'resolvedByRole': resolvedByRole,
     });
-    return Dispute.fromJson(Map<String, dynamic>.from(res.data as Map));
+    final map = res.data is Map
+        ? Map<String, dynamic>.from(res.data as Map)
+        : <String, dynamic>{};
+    final disputeRaw = map['dispute'] is Map
+        ? Map<String, dynamic>.from(map['dispute'] as Map)
+        : map;
+    return Dispute.fromJson(disputeRaw);
   }
 
   Future<PayoutClaimResult> claimPayout({
@@ -276,6 +336,18 @@ class TransactionActionCreateResult {
   });
 
   final ChatAction action;
+  final List<String> warnings;
+}
+
+class TransactionActionResolveResult {
+  TransactionActionResolveResult({
+    required this.action,
+    required this.transaction,
+    required this.warnings,
+  });
+
+  final ChatAction action;
+  final Transaction transaction;
   final List<String> warnings;
 }
 

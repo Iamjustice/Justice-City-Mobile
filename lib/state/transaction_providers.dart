@@ -144,6 +144,26 @@ class _TransactionController {
     return result;
   }
 
+  Future<TransactionActionResolveResult> resolveAction(
+    String conversationId,
+    String txId, {
+    required String actionId,
+    required String decision,
+    Map<String, dynamic>? payload,
+  }) async {
+    final result = await repo.resolveAction(
+      actionId: actionId,
+      actorUserId: userId,
+      actorRole: userRole,
+      actorName: userName,
+      decision: decision,
+      payload: payload,
+    );
+    ref.invalidate(transactionActionsProvider(txId));
+    ref.invalidate(transactionByConversationProvider(conversationId));
+    return result;
+  }
+
   Future<TransactionRatingResult> submitRating(
     String conversationId,
     String txId, {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/me_provider.dart';
 import '../../state/transaction_providers.dart';
+import '../../domain/models/chat_action.dart';
 import '../../domain/models/transaction.dart';
 
 class TransactionCenterScreen extends ConsumerStatefulWidget {
@@ -209,10 +210,19 @@ class _Body extends ConsumerWidget {
                     ? const ListTile(title: Text('No actions yet.'))
                     : Column(
                         children: items
-                            .map((a) => ListTile(
-                                  title: Text(a.actionType),
-                                  subtitle: Text(
-                                      'Status: ${a.status} - Target: ${a.targetRole}'),
+                            .map((a) => _ActionResolutionTile(
+                                  action: a,
+                                  conversationId: conversationId,
+                                  transactionId: tx!.id,
+                                  userRole: userRole,
+                                  onResolved: () {
+                                    ref.invalidate(
+                                        transactionActionsProvider(tx!.id));
+                                    ref.invalidate(
+                                      transactionByConversationProvider(
+                                          conversationId),
+                                    );
+                                  },
                                 ))
                             .toList(),
                       ),
@@ -312,6 +322,193 @@ class _Body extends ConsumerWidget {
           )
         ],
       ),
+    );
+  }
+}
+
+class _ActionResolutionTile extends ConsumerStatefulWidget {
+  const _ActionResolutionTile({
+    required this.action,
+    required this.conversationId,
+    required this.transactionId,
+    required this.userRole,
+    required this.onResolved,
+  });
+
+  final ChatAction action;
+  final String conversationId;
+  final String transactionId;
+  final String userRole;
+  final VoidCallback onResolved;
+
+  @override
+  ConsumerState<_ActionResolutionTile> createState() =>
+      _ActionResolutionTileState();
+}
+
+class _ActionResolutionTileState extends ConsumerState<_ActionResolutionTile> {
+  final _payloadCtrl = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _payloadCtrl.dispose();
+    super.dispose();
+  }
+
+  bool get _canResolve {
+    if (widget.action.status.trim().toLowerCase() != 'pending') return false;
+    final role = widget.userRole.trim().toLowerCase();
+    if (role == 'admin' || role == 'support') return true;
+    return widget.action.targetRole.trim().toLowerCase() == role;
+  }
+
+  String get _primaryLabel {
+    final type = widget.action.actionType.trim().toLowerCase();
+    if (type == 'upload_payment_proof' ||
+        type == 'upload_signed_closing_contract' ||
+        type == 'upload_service_deliverable') {
+      return 'Submit';
+    }
+    if (type == 'accept_delivery') return 'Accept';
+    return 'Accept';
+  }
+
+  String get _primaryDecision {
+    final type = widget.action.actionType.trim().toLowerCase();
+    if (type == 'upload_payment_proof' ||
+        type == 'upload_signed_closing_contract' ||
+        type == 'upload_service_deliverable') {
+      return 'submit';
+    }
+    return 'accept';
+  }
+
+  String get _secondaryLabel {
+    if (widget.action.actionType.trim().toLowerCase() == 'accept_delivery') {
+      return 'Dispute';
+    }
+    return 'Decline';
+  }
+
+  Future<void> _resolve(String decision) async {
+    Map<String, dynamic>? payload;
+    final payloadText = _payloadCtrl.text.trim();
+    if (payloadText.isNotEmpty) {
+      final decoded = jsonDecode(payloadText);
+      if (decoded is! Map) {
+        throw const FormatException('Payload must be a JSON object.');
+      }
+      payload = Map<String, dynamic>.from(decoded);
+    }
+
+    final controller = ref.read(transactionControllerProvider);
+    final result = await controller.resolveAction(
+      widget.conversationId,
+      widget.transactionId,
+      actionId: widget.action.id,
+      decision: decision,
+      payload: payload,
+    );
+
+    widget.onResolved();
+    if (!mounted) return;
+    final warningText =
+        result.warnings.isNotEmpty ? ' Warning: ${result.warnings.first}' : '';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Action resolved.$warningText')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final status = widget.action.status.trim().toLowerCase();
+    final target = widget.action.targetRole.trim().toLowerCase();
+    return ListTile(
+      title: Text(widget.action.actionType),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Status: $status - Target: $target'),
+          if (_canResolve) ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: _payloadCtrl,
+              minLines: 1,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Payload JSON (optional)',
+                hintText: '{"note":"optional"}',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _submitting
+                      ? null
+                      : () async {
+                          setState(() => _submitting = true);
+                          try {
+                            await _resolve(_primaryDecision);
+                          } on FormatException catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Payload error: ${e.message}'),
+                              ),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Action resolve failed: ${_readableApiError(e)}',
+                                ),
+                              ),
+                            );
+                          } finally {
+                            if (mounted) setState(() => _submitting = false);
+                          }
+                        },
+                  child: Text(_primaryLabel),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: _submitting
+                      ? null
+                      : () async {
+                          setState(() => _submitting = true);
+                          try {
+                            await _resolve('decline');
+                          } on FormatException catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Payload error: ${e.message}'),
+                              ),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Action resolve failed: ${_readableApiError(e)}',
+                                ),
+                              ),
+                            );
+                          } finally {
+                            if (mounted) setState(() => _submitting = false);
+                          }
+                        },
+                  child: Text(_secondaryLabel),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+      isThreeLine: _canResolve,
     );
   }
 }

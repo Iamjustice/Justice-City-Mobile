@@ -14,8 +14,10 @@ class AdminRepository {
     return {'raw': data};
   }
 
-  Future<List<dynamic>> listHiringApplications({required String actorRole}) async {
-    final res = await _dio.get(ApiEndpoints.adminHiringApplications, queryParameters: {
+  Future<List<dynamic>> listHiringApplications(
+      {required String actorRole}) async {
+    final res =
+        await _dio.get(ApiEndpoints.adminHiringApplications, queryParameters: {
       'actorRole': actorRole,
     });
     return (res.data is List) ? (res.data as List) : <dynamic>[];
@@ -36,7 +38,9 @@ class AdminRepository {
       if (reviewerName != null) 'reviewerName': reviewerName,
       if (actorRole != null) 'actorRole': actorRole,
     });
-    return (res.data is Map<String, dynamic>) ? (res.data as Map<String, dynamic>) : <String, dynamic>{};
+    return (res.data is Map<String, dynamic>)
+        ? (res.data as Map<String, dynamic>)
+        : <String, dynamic>{};
   }
 
   Future<Map<String, dynamic>> patchServiceOffering({
@@ -45,12 +49,15 @@ class AdminRepository {
     String? turnaround,
     required String actorRole,
   }) async {
-    final res = await _dio.patch(ApiEndpoints.adminServiceOffering(code), data: {
+    final res =
+        await _dio.patch(ApiEndpoints.adminServiceOffering(code), data: {
       if (price != null) 'price': price,
       if (turnaround != null) 'turnaround': turnaround,
       'actorRole': actorRole,
     });
-    return (res.data is Map<String, dynamic>) ? (res.data as Map<String, dynamic>) : <String, dynamic>{};
+    return (res.data is Map<String, dynamic>)
+        ? (res.data as Map<String, dynamic>)
+        : <String, dynamic>{};
   }
 
   Future<List<dynamic>> listAdminConversations({
@@ -58,7 +65,8 @@ class AdminRepository {
     String? viewerRole,
     String? viewerName,
   }) async {
-    final res = await _dio.get(ApiEndpoints.adminChatConversations, queryParameters: {
+    final res =
+        await _dio.get(ApiEndpoints.adminChatConversations, queryParameters: {
       'viewerId': viewerId,
       if (viewerRole != null) 'viewerRole': viewerRole,
       if (viewerName != null) 'viewerName': viewerName,
@@ -66,12 +74,16 @@ class AdminRepository {
     return (res.data is List) ? (res.data as List) : <dynamic>[];
   }
 
-  Future<void> setVerificationStatus({required String id, required String status}) async {
-    await _dio.patch(ApiEndpoints.adminVerification(id), data: {'status': status});
+  Future<void> setVerificationStatus(
+      {required String id, required String status}) async {
+    await _dio
+        .patch(ApiEndpoints.adminVerification(id), data: {'status': status});
   }
 
-  Future<void> setFlaggedListingStatus({required String id, required String status}) async {
-    await _dio.patch(ApiEndpoints.adminFlaggedListingStatus(id), data: {'status': status});
+  Future<void> setFlaggedListingStatus(
+      {required String id, required String status}) async {
+    await _dio.patch(ApiEndpoints.adminFlaggedListingStatus(id),
+        data: {'status': status});
   }
 
   Future<Map<String, dynamic>> addFlaggedListingComment({
@@ -81,12 +93,79 @@ class AdminRepository {
     required String createdBy,
     String? createdById,
   }) async {
-    final res = await _dio.post(ApiEndpoints.adminFlaggedListingComments(id), data: {
+    final res =
+        await _dio.post(ApiEndpoints.adminFlaggedListingComments(id), data: {
       'comment': comment,
       'problemTag': problemTag,
       'createdBy': createdBy,
       if (createdById != null) 'createdById': createdById,
     });
-    return (res.data is Map<String, dynamic>) ? (res.data as Map<String, dynamic>) : <String, dynamic>{};
+    return (res.data is Map<String, dynamic>)
+        ? (res.data as Map<String, dynamic>)
+        : <String, dynamic>{};
+  }
+
+  Future<List<Map<String, dynamic>>> listOpenDisputes({
+    required String actorRole,
+    int? limit,
+  }) async {
+    final res = await _dio.get(
+      ApiEndpoints.openDisputes,
+      queryParameters: {
+        'actorRole': actorRole,
+        if (limit != null) 'limit': limit,
+      },
+    );
+    final raw = (res.data as List?) ?? const [];
+    return raw
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> resolveDispute({
+    required String disputeId,
+    required String resolvedByRole,
+    String? status,
+    String? resolution,
+    String? resolutionTargetStatus,
+    String? resolvedByUserId,
+    String? resolvedByName,
+    bool? unfreezeEscrow,
+    Map<String, dynamic>? metadata,
+  }) async {
+    final res = await _dio.post(
+      ApiEndpoints.resolveDispute(disputeId),
+      data: {
+        'resolvedByRole': resolvedByRole,
+        if (status != null && status.trim().isNotEmpty) 'status': status.trim(),
+        if (resolution != null && resolution.trim().isNotEmpty)
+          'resolution': resolution.trim(),
+        if (resolutionTargetStatus != null &&
+            resolutionTargetStatus.trim().isNotEmpty)
+          'resolutionTargetStatus': resolutionTargetStatus.trim(),
+        if (resolvedByUserId != null && resolvedByUserId.trim().isNotEmpty)
+          'resolvedByUserId': resolvedByUserId.trim(),
+        if (resolvedByName != null && resolvedByName.trim().isNotEmpty)
+          'resolvedByName': resolvedByName.trim(),
+        if (unfreezeEscrow != null) 'unfreezeEscrow': unfreezeEscrow,
+        if (metadata != null) 'metadata': metadata,
+      },
+    );
+    return (res.data is Map<String, dynamic>)
+        ? (res.data as Map<String, dynamic>)
+        : <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> processNextServicePdfJob({
+    required String actorRole,
+  }) async {
+    final res = await _dio.post(
+      ApiEndpoints.servicePdfJobsProcessNext,
+      data: {'actorRole': actorRole},
+    );
+    return (res.data is Map<String, dynamic>)
+        ? (res.data as Map<String, dynamic>)
+        : <String, dynamic>{};
   }
 }
