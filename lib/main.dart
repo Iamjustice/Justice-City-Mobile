@@ -29,11 +29,16 @@ class JusticeCityApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Justice City',
+      title: 'JUSTICE CITY LTD',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF0F172A),
+          secondary: Color(0xFF2563EB),
+          surface: Color(0xFFFFFFFF),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF4F7FB),
         useMaterial3: true,
       ),
     );
