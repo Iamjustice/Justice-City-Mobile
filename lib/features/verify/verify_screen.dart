@@ -187,7 +187,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           ),
           const SizedBox(height: 12),
 
-          _SectionTitle('Step 1 - Email OTP'),
+          const _SectionTitle('Step 1 - Email OTP'),
           _Field(_emailController, label: 'Email'),
           Row(
             children: [
@@ -235,7 +235,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           _Field(_emailCodeController, label: 'Email code'),
           const SizedBox(height: 16),
 
-          _SectionTitle('Step 2 - Phone OTP'),
+          const _SectionTitle('Step 2 - Phone OTP'),
           _Field(_phoneController, label: 'Phone (E.164 e.g. +2349012345678)'),
           Row(
             children: [
@@ -283,7 +283,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           _Field(_phoneCodeController, label: 'SMS code'),
           const SizedBox(height: 16),
 
-          _SectionTitle('Step 3 - Address + documents'),
+          const _SectionTitle('Step 3 - Address + documents'),
           _Field(_homeAddressController, label: 'Home address (required)'),
           _Field(_officeAddressController, label: 'Office address (optional)'),
           _Field(_dobController, label: 'Date of birth (YYYY-MM-DD, optional)'),
@@ -332,7 +332,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           ],
           const SizedBox(height: 16),
 
-          _SectionTitle('Step 4 - Smile ID submission'),
+          const _SectionTitle('Step 4 - Smile ID submission'),
           ElevatedButton(
             onPressed: (_busy || userId.isEmpty)
                 ? null

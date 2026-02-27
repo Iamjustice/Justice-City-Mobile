@@ -14,7 +14,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Authentication'), findsOneWidget);
-    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Create an account'), findsOneWidget);
+    expect(find.text('Sign up'), findsOneWidget);
   });
 }

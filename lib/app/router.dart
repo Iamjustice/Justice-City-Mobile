@@ -23,13 +23,15 @@ import '../state/me_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/welcome',
     refreshListenable: ref.watch(routerRefreshProvider),
     redirect: (context, state) {
       final session = ref.read(sessionProvider);
 
       final loc = state.matchedLocation;
-      final isAuthRoute = loc == '/auth';
+      final isWelcomeRoute = loc == '/welcome';
+      final isSignInRoute = loc == '/sign-in';
+      final isAuthRoute = loc == '/auth' || isWelcomeRoute || isSignInRoute;
       final isVerifyRoute = loc == '/verify';
       final isAdminRoute = loc == '/admin';
       final isListingRoute = loc == '/listings' || loc.startsWith('/property/');
@@ -48,8 +50,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       final signedIn = session != null;
 
       // Auth gate
-      if (!signedIn && !isAuthRoute && !isPublicAuthRoute) return '/auth';
-      if (signedIn && isAuthRoute) return '/home';
+      if (!signedIn && !isAuthRoute && !isPublicAuthRoute) return '/welcome';
+      if (signedIn && isAuthRoute) {
+        final verification = ref.read(verificationStatusProvider);
+        return verification.when(
+          data: (s) => (s?.isVerified == true) ? '/home' : '/verify',
+          loading: () => '/verify',
+          error: (_, __) => '/verify',
+        );
+      }
 
       // Admin gate
       if (signedIn && isAdminRoute) {
@@ -101,11 +110,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/',
-        redirect: (_, __) => '/home',
+        redirect: (_, __) => '/welcome',
+      ),
+      GoRoute(
+        path: '/welcome',
+        builder: (_, __) => const AuthScreen(),
+      ),
+      GoRoute(
+        path: '/sign-in',
+        builder: (_, __) => const SignInScreen(),
       ),
       GoRoute(
         path: '/auth',
-        builder: (_, __) => const AuthScreen(),
+        redirect: (_, __) => '/welcome',
       ),
       GoRoute(
         path: '/verify',
@@ -162,9 +179,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/property/:id',
         builder: (_, state) {
           final id = state.pathParameters['id'] ?? '';
+          final openVerification =
+              state.uri.queryParameters['view'] == 'verification';
           return ListingDetailsScreen(
             listingId: id,
             initial: state.extra is Listing ? state.extra as Listing : null,
+            showVerificationOnOpen: openVerification,
           );
         },
       ),
