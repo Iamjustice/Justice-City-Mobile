@@ -121,10 +121,12 @@ class ListingsRepository {
     final query = <String, dynamic>{};
     if (actor != null) {
       query['actorId'] = actor.actorId;
-      if ((actor.actorRole ?? '').trim().isNotEmpty)
+      if ((actor.actorRole ?? '').trim().isNotEmpty) {
         query['actorRole'] = actor.actorRole;
-      if ((actor.actorName ?? '').trim().isNotEmpty)
+      }
+      if ((actor.actorName ?? '').trim().isNotEmpty) {
         query['actorName'] = actor.actorName;
+      }
     }
 
     final res = await _dio.get(
@@ -132,18 +134,36 @@ class ListingsRepository {
       queryParameters: query.isEmpty ? null : query,
     );
 
-    final data = res.data;
-    if (data is List) {
-      return data
-          .map((e) => Listing.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+    final rows = _extractRows(res.data);
+    return rows.map(Listing.fromJson).toList();
+  }
+
+  Future<Map<String, dynamic>?> fetchListingRecord({
+    required String listingId,
+    ListingActor? actor,
+  }) async {
+    final query = <String, dynamic>{};
+    if (actor != null) {
+      query['actorId'] = actor.actorId;
+      if ((actor.actorRole ?? '').trim().isNotEmpty) {
+        query['actorRole'] = actor.actorRole;
+      }
+      if ((actor.actorName ?? '').trim().isNotEmpty) {
+        query['actorName'] = actor.actorName;
+      }
     }
-    if (data is Map && data['items'] is List) {
-      return (data['items'] as List)
-          .map((e) => Listing.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+
+    final res = await _dio.get(
+      ApiEndpoints.agentListings,
+      queryParameters: query.isEmpty ? null : query,
+    );
+    final rows = _extractRows(res.data);
+    for (final row in rows) {
+      if ('${row['id'] ?? ''}'.trim() == listingId) {
+        return row;
+      }
     }
-    return const [];
+    return null;
   }
 
   Future<Listing> createListing({
@@ -210,6 +230,18 @@ class ListingsRepository {
         res.data, 'Unexpected response from server while updating status.');
   }
 
+  Future<void> updateListingVerificationStepStatus({
+    required String listingId,
+    required String stepKey,
+    required String status,
+    required ListingActor actor,
+  }) async {
+    await _dio.patch(
+      ApiEndpoints.patchListingVerificationStepStatus(listingId, stepKey),
+      data: _withActor(actor, {'status': status}),
+    );
+  }
+
   Future<Listing> updateListingPayoutStatus({
     required String listingId,
     required String payoutStatus,
@@ -253,10 +285,12 @@ class ListingsRepository {
       ...payload,
       'actorId': actor.actorId,
     };
-    if ((actor.actorRole ?? '').trim().isNotEmpty)
+    if ((actor.actorRole ?? '').trim().isNotEmpty) {
       data['actorRole'] = actor.actorRole;
-    if ((actor.actorName ?? '').trim().isNotEmpty)
+    }
+    if ((actor.actorName ?? '').trim().isNotEmpty) {
       data['actorName'] = actor.actorName;
+    }
     return data;
   }
 
@@ -265,5 +299,21 @@ class ListingsRepository {
       return Listing.fromJson(Map<String, dynamic>.from(data));
     }
     throw StateError(fallbackError);
+  }
+
+  List<Map<String, dynamic>> _extractRows(dynamic data) {
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+    }
+    if (data is Map && data['items'] is List) {
+      return (data['items'] as List)
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+    }
+    return const [];
   }
 }

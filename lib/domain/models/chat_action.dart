@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'chat_action.freezed.dart';
 part 'chat_action.g.dart';
 
-String? _asString(dynamic v) => v == null ? null : v.toString();
+String? _asString(dynamic v) => v?.toString();
 
 @freezed
 class ChatAction with _$ChatAction {

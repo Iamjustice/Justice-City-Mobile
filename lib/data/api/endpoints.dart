@@ -14,6 +14,11 @@ class ApiEndpoints {
       '/api/agent/listings/$listingId';
   static String patchListingStatus(String listingId) =>
       '/api/agent/listings/$listingId/status';
+  static String patchListingVerificationStepStatus(
+    String listingId,
+    String stepKey,
+  ) =>
+      '/api/agent/listings/$listingId/verification-steps/$stepKey';
   static String patchListingPayout(String listingId) =>
       '/api/agent/listings/$listingId/payout';
 
