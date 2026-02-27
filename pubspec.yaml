@@ -27,6 +27,7 @@ dev_dependencies:
   freezed: ^2.5.7
   json_serializable: ^6.8.0
   flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
 
 flutter:
   uses-material-design: true
@@ -46,3 +47,13 @@ flutter_launcher_icons:
   image_path: assets/images/app_icon_source.png
   adaptive_icon_background: "#000000"
   adaptive_icon_foreground: assets/images/app_icon_source.png
+
+flutter_native_splash:
+  color: "#000000"
+  image: assets/images/app_icon_source.png
+  android: true
+  ios: true
+  web: true
+  android_12:
+    image: assets/images/app_icon_source.png
+    icon_background_color: "#000000"
