@@ -17,11 +17,14 @@ const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
 
-final chatMessagesProvider = FutureProvider.family<List<ChatMessage>, String>((ref, conversationId) async {
+final chatMessagesProvider = FutureProvider.family<List<ChatMessage>, String>(
+    (ref, conversationId) async {
   final session = ref.watch(sessionProvider);
   final viewerId = session?.userId;
   if (viewerId == null) return const [];
-  return ref.read(chatRepositoryProvider).getMessages(conversationId: conversationId, viewerId: viewerId);
+  return ref
+      .read(chatRepositoryProvider)
+      .getMessages(conversationId: conversationId, viewerId: viewerId);
 });
 
 class ChatThreadScreen extends ConsumerStatefulWidget {
@@ -56,7 +59,8 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       type: FileType.any,
     );
     if (result == null) return;
-    setState(() => _pendingFiles.addAll(result.files.take(5 - _pendingFiles.length)));
+    setState(() =>
+        _pendingFiles.addAll(result.files.take(5 - _pendingFiles.length)));
   }
 
   Future<void> _send() async {
@@ -129,24 +133,22 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       appBar: AppBar(
         backgroundColor: _jcPageBg,
         surfaceTintColor: Colors.transparent,
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-            color: _jcHeading,
-          ),
+        title: const SizedBox(
+          height: 32,
+          child: _BrandWordmark(),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.account_balance_wallet_outlined),
             tooltip: 'Transaction Center',
-            onPressed: () => context.push('/transaction/${widget.conversationId}'),
+            onPressed: () =>
+                context.push('/transaction/${widget.conversationId}'),
           ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(chatMessagesProvider(widget.conversationId)),
+            onPressed: () =>
+                ref.invalidate(chatMessagesProvider(widget.conversationId)),
           ),
         ],
       ),
@@ -173,9 +175,23 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                           bottom: BorderSide(color: _jcPanelBorder),
                         ),
                       ),
-                      child: const Text(
-                        'Use this thread for listing support, transaction updates, and file exchange.',
-                        style: TextStyle(fontSize: 14, color: _jcMuted),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                              color: _jcHeading,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Use this thread for listing support, transaction updates, and file exchange.',
+                            style: TextStyle(fontSize: 14, color: _jcMuted),
+                          ),
+                        ],
                       ),
                     ),
                     Expanded(
@@ -194,7 +210,8 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                             itemCount: items.length,
                             itemBuilder: (_, i) {
                               final msg = items[i];
-                              final isMe = msg.senderId != null && msg.senderId == meId;
+                              final isMe =
+                                  msg.senderId != null && msg.senderId == meId;
                               return _Bubble(
                                 message: msg,
                                 isMe: isMe,
@@ -202,8 +219,10 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                             },
                           );
                         },
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Center(child: Text('Failed to load messages: $e')),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (e, _) =>
+                            Center(child: Text('Failed to load messages: $e')),
                       ),
                     ),
                     if (_pendingFiles.isNotEmpty)
@@ -216,8 +235,10 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                           separatorBuilder: (_, __) => const SizedBox(width: 6),
                           itemBuilder: (_, i) => Chip(
                             side: const BorderSide(color: _jcPanelBorder),
-                            label: Text(_pendingFiles[i].name, overflow: TextOverflow.ellipsis),
-                            onDeleted: () => setState(() => _pendingFiles.removeAt(i)),
+                            label: Text(_pendingFiles[i].name,
+                                overflow: TextOverflow.ellipsis),
+                            onDeleted: () =>
+                                setState(() => _pendingFiles.removeAt(i)),
                           ),
                         ),
                       ),
@@ -248,11 +269,14 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                                   fillColor: Color(0xFFF8FAFC),
                                   filled: true,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(10)),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(color: _jcPanelBorder),
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(10)),
+                                    borderSide:
+                                        BorderSide(color: _jcPanelBorder),
                                   ),
                                 ),
                               ),
@@ -264,7 +288,8 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                                   ? const SizedBox(
                                       width: 16,
                                       height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
                                     )
                                   : const Text('Send'),
                             ),
@@ -307,7 +332,8 @@ class _Bubble extends StatelessWidget {
               bottomLeft: Radius.circular(isMe ? 16 : 4),
               bottomRight: Radius.circular(isMe ? 4 : 16),
             ),
-            border: Border.all(color: isMe ? const Color(0xFF2563EB) : _jcPanelBorder),
+            border: Border.all(
+                color: isMe ? const Color(0xFF2563EB) : _jcPanelBorder),
           ),
           child: Column(
             crossAxisAlignment: align,
@@ -350,6 +376,28 @@ class _Bubble extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandWordmark extends StatelessWidget {
+  const _BrandWordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/logo.png',
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'JUSTICE CITY LTD',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: _jcHeading,
           ),
         ),
       ),

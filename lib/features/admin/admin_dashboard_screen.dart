@@ -57,9 +57,19 @@ class AdminDashboardScreen extends ConsumerWidget {
 
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Admin')),
+        backgroundColor: _jcPageBg,
+        appBar: AppBar(
+          backgroundColor: _jcPageBg,
+          surfaceTintColor: Colors.transparent,
+          title: const SizedBox(
+            height: 32,
+            child: _BrandWordmark(),
+          ),
+        ),
         body: const Center(
-          child: Text('You do not have admin access.'),
+          child: _PanelCard(
+            child: Text('You do not have admin access.'),
+          ),
         ),
       );
     }
@@ -74,13 +84,9 @@ class AdminDashboardScreen extends ConsumerWidget {
           backgroundColor: _jcPageBg,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
-          title: const Text(
-            'Admin Console',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 30,
-              color: _jcHeading,
-            ),
+          title: const SizedBox(
+            height: 32,
+            child: _BrandWordmark(),
           ),
           actions: [
             IconButton(
@@ -166,54 +172,64 @@ class AdminDashboardScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           child: Column(
             children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text('All Conversations (Admin)',
+              _PanelCard(
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'All Conversations (Admin)',
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () {
-                      ref.invalidate(adminConversationsProvider);
-                      Navigator.of(context).pop();
-                      _openAdminConversations(context, ref);
-                    },
-                  )
-                ],
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: _jcHeading,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () {
+                        ref.invalidate(adminConversationsProvider);
+                        Navigator.of(context).pop();
+                        _openAdminConversations(context, ref);
+                      },
+                    )
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: ListView.separated(
-                  itemCount: data.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final item = data[i];
-                    final m = item is Map ? item : <String, dynamic>{};
-                    final title = (m['subject'] ?? m['title'] ?? 'Conversation')
-                        .toString();
-                    final last = (m['lastMessage'] ?? m['last_message'] ?? '')
-                        .toString();
-                    final id =
-                        (m['id'] ?? m['conversationId'] ?? '').toString();
-                    return ListTile(
-                      title: Text(title),
-                      subtitle: last.isEmpty
-                          ? null
-                          : Text(last,
-                              maxLines: 2, overflow: TextOverflow.ellipsis),
-                      trailing:
-                          id.isEmpty ? null : const Icon(Icons.chevron_right),
-                      onTap: id.isEmpty
-                          ? null
-                          : () {
-                              Navigator.of(context).pop();
-                              // Open regular chat thread screen in the app (admin can read it if backend allows).
-                              GoRouter.of(context).go('/chat/$id');
-                            },
-                    );
-                  },
+                child: _PanelCard(
+                  child: ListView.separated(
+                    itemCount: data.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, i) {
+                      final item = data[i];
+                      final m = item is Map ? item : <String, dynamic>{};
+                      final title =
+                          (m['subject'] ?? m['title'] ?? 'Conversation')
+                              .toString();
+                      final last = (m['lastMessage'] ?? m['last_message'] ?? '')
+                          .toString();
+                      final id =
+                          (m['id'] ?? m['conversationId'] ?? '').toString();
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(title),
+                        subtitle: last.isEmpty
+                            ? null
+                            : Text(last,
+                                maxLines: 2, overflow: TextOverflow.ellipsis),
+                        trailing:
+                            id.isEmpty ? null : const Icon(Icons.chevron_right),
+                        onTap: id.isEmpty
+                            ? null
+                            : () {
+                                Navigator.of(context).pop();
+                                GoRouter.of(context).go('/chat/$id');
+                              },
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
@@ -262,17 +278,21 @@ class _OverviewTab extends StatelessWidget {
             ),
             if (revenueLabel.toString().isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text('Revenue label: $revenueLabel'),
+              _PanelCard(
+                child: Text('Revenue label: $revenueLabel'),
+              ),
             ],
             const SizedBox(height: 16),
-            Text('Raw (debug)', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: _jcPanelBorder),
-                borderRadius: BorderRadius.circular(12),
+            const Text(
+              'Raw (debug)',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: _jcHeading,
               ),
+            ),
+            const SizedBox(height: 6),
+            _PanelCard(
               child: Text(const JsonEncoder.withIndent('  ').convert(data)),
             ),
           ],
@@ -317,82 +337,90 @@ class _VerificationsTab extends ConsumerWidget {
                 ? (m['documents'] as List)
                 : <dynamic>[];
 
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                            child: Text('$user - $type',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600))),
-                        Text(status),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    if (createdAt.isNotEmpty) Text('Created: $createdAt'),
-                    const SizedBox(height: 8),
-                    if (docs.isNotEmpty) ...[
-                      const Text('Documents:',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 4),
-                      ...docs.take(4).map((d) {
-                        final dm = d is Map
-                            ? Map<String, dynamic>.from(d)
-                            : <String, dynamic>{};
-                        return Text(
-                            '- ${(dm['name'] ?? '').toString()}  ${(dm['url'] ?? '').toString()}');
-                      }),
-                      if (docs.length > 4) const Text('...'),
-                      const SizedBox(height: 8),
-                    ],
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _normalizeAdminVerificationStatus(
-                              status,
-                            ),
-                            decoration:
-                                const InputDecoration(labelText: 'Set status'),
-                            items: const [
-                              DropdownMenuItem(
-                                  value: 'Awaiting Review',
-                                  child: Text('Awaiting Review')),
-                              DropdownMenuItem(
-                                  value: 'Approved', child: Text('Approved')),
-                              DropdownMenuItem(
-                                  value: 'Rejected', child: Text('Rejected')),
-                            ],
-                            onChanged: (v) async {
-                              if (v == null || id.isEmpty) return;
-                              try {
-                                await ref
-                                    .read(adminRepositoryProvider)
-                                    .setVerificationStatus(id: id, status: v);
-                                ref.invalidate(adminDashboardProvider);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content:
-                                              Text('Verification updated')));
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Failed: $e')));
-                                }
-                              }
-                            },
+            return _PanelCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '$user - $type',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: _jcHeading,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      _StatusPill(
+                        text: status,
+                        ok: status.toLowerCase() == 'approved',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  if (createdAt.isNotEmpty)
+                    Text('Created: $createdAt',
+                        style: const TextStyle(color: _jcMuted)),
+                  const SizedBox(height: 8),
+                  if (docs.isNotEmpty) ...[
+                    const Text('Documents:',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    ...docs.take(4).map((d) {
+                      final dm = d is Map
+                          ? Map<String, dynamic>.from(d)
+                          : <String, dynamic>{};
+                      return Text(
+                        '- ${(dm['name'] ?? '').toString()}  ${(dm['url'] ?? '').toString()}',
+                        style: const TextStyle(color: _jcMuted),
+                      );
+                    }),
+                    if (docs.length > 4) const Text('...'),
+                    const SizedBox(height: 8),
                   ],
-                ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _normalizeAdminVerificationStatus(
+                            status,
+                          ),
+                          decoration:
+                              const InputDecoration(labelText: 'Set status'),
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'Awaiting Review',
+                                child: Text('Awaiting Review')),
+                            DropdownMenuItem(
+                                value: 'Approved', child: Text('Approved')),
+                            DropdownMenuItem(
+                                value: 'Rejected', child: Text('Rejected')),
+                          ],
+                          onChanged: (v) async {
+                            if (v == null || id.isEmpty) return;
+                            try {
+                              await ref
+                                  .read(adminRepositoryProvider)
+                                  .setVerificationStatus(id: id, status: v);
+                              ref.invalidate(adminDashboardProvider);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Verification updated')));
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Failed: $e')));
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             );
           },
@@ -443,76 +471,95 @@ class _FlaggedTab extends ConsumerWidget {
             final comments =
                 (m['comments'] is List) ? (m['comments'] as List) : <dynamic>[];
 
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
-                    if (location.isNotEmpty) Text(location),
-                    const SizedBox(height: 6),
-                    if (reason.isNotEmpty) Text('Reason: $reason'),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(child: Text('Status: $status')),
-                        if (updatedAt.isNotEmpty)
-                          Text(updatedAt,
-                              style: Theme.of(context).textTheme.bodySmall),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      initialValue: _normalizeFlaggedStatus(status),
-                      decoration:
-                          const InputDecoration(labelText: 'Set status'),
-                      items: const [
-                        DropdownMenuItem(value: 'Open', child: Text('Open')),
-                        DropdownMenuItem(
-                            value: 'Under Review', child: Text('Under Review')),
-                        DropdownMenuItem(
-                            value: 'Cleared', child: Text('Cleared')),
-                      ],
-                      onChanged: (v) async {
-                        if (v == null || id.isEmpty) return;
-                        try {
-                          await ref
-                              .read(adminRepositoryProvider)
-                              .setFlaggedListingStatus(id: id, status: v);
-                          ref.invalidate(adminDashboardProvider);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Flag status updated')));
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed: $e')));
-                          }
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _AddCommentBox(listingId: id),
-                    if (comments.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      const Text('Comments',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 4),
-                      ...comments.take(3).map((c) {
-                        final cm = c is Map
-                            ? Map<String, dynamic>.from(c)
-                            : <String, dynamic>{};
-                        return Text(
-                            '- ${(cm['problemTag'] ?? '').toString()}: ${(cm['comment'] ?? '').toString()}');
-                      }),
-                      if (comments.length > 3) const Text('...'),
+            return _PanelCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: _jcHeading,
+                          ),
+                        ),
+                      ),
+                      _StatusPill(
+                        text: status,
+                        ok: _normalizeFlaggedStatus(status) == 'Cleared',
+                      ),
                     ],
+                  ),
+                  if (location.isNotEmpty)
+                    Text(location, style: const TextStyle(color: _jcMuted)),
+                  const SizedBox(height: 6),
+                  if (reason.isNotEmpty) Text('Reason: $reason'),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Status: $status',
+                          style: const TextStyle(color: _jcMuted),
+                        ),
+                      ),
+                      if (updatedAt.isNotEmpty)
+                        Text(updatedAt,
+                            style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    initialValue: _normalizeFlaggedStatus(status),
+                    decoration: const InputDecoration(labelText: 'Set status'),
+                    items: const [
+                      DropdownMenuItem(value: 'Open', child: Text('Open')),
+                      DropdownMenuItem(
+                          value: 'Under Review', child: Text('Under Review')),
+                      DropdownMenuItem(
+                          value: 'Cleared', child: Text('Cleared')),
+                    ],
+                    onChanged: (v) async {
+                      if (v == null || id.isEmpty) return;
+                      try {
+                        await ref
+                            .read(adminRepositoryProvider)
+                            .setFlaggedListingStatus(id: id, status: v);
+                        ref.invalidate(adminDashboardProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Flag status updated')));
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e')));
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _AddCommentBox(listingId: id),
+                  if (comments.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    const Text('Comments',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    ...comments.take(3).map((c) {
+                      final cm = c is Map
+                          ? Map<String, dynamic>.from(c)
+                          : <String, dynamic>{};
+                      return Text(
+                        '- ${(cm['problemTag'] ?? '').toString()}: ${(cm['comment'] ?? '').toString()}',
+                        style: const TextStyle(color: _jcMuted),
+                      );
+                    }),
+                    if (comments.length > 3) const Text('...'),
                   ],
-                ),
+                ],
               ),
             );
           },
@@ -642,7 +689,7 @@ class _HiringTab extends ConsumerWidget {
           return const Center(child: Text('No hiring applications'));
         }
         return ListView.separated(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           itemCount: list.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, i) {
@@ -655,56 +702,68 @@ class _HiringTab extends ConsumerWidget {
             final status = (m['status'] ?? '').toString();
             final email = (m['email'] ?? '').toString();
 
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name,
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
-                    if (email.isNotEmpty) Text(email),
-                    if (track.isNotEmpty) Text('Track: $track'),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: status.isEmpty ? 'submitted' : status,
-                      decoration: const InputDecoration(labelText: 'Status'),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'submitted', child: Text('submitted')),
-                        DropdownMenuItem(
-                            value: 'under_review', child: Text('under_review')),
-                        DropdownMenuItem(
-                            value: 'approved', child: Text('approved')),
-                        DropdownMenuItem(
-                            value: 'rejected', child: Text('rejected')),
-                      ],
-                      onChanged: (v) async {
-                        if (v == null || id.isEmpty) return;
-                        try {
-                          await ref
-                              .read(adminRepositoryProvider)
-                              .updateHiringStatus(
-                                id: id,
-                                status: v,
-                                actorRole: 'admin',
-                              );
-                          ref.invalidate(adminHiringProvider);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Hiring status updated')));
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed: $e')));
-                          }
+            return _PanelCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: _jcHeading,
+                          ),
+                        ),
+                      ),
+                      _StatusPill(text: status, ok: status == 'approved'),
+                    ],
+                  ),
+                  if (email.isNotEmpty)
+                    Text(email, style: const TextStyle(color: _jcMuted)),
+                  if (track.isNotEmpty)
+                    Text('Track: $track',
+                        style: const TextStyle(color: _jcMuted)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: status.isEmpty ? 'submitted' : status,
+                    decoration: const InputDecoration(labelText: 'Status'),
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'submitted', child: Text('submitted')),
+                      DropdownMenuItem(
+                          value: 'under_review', child: Text('under_review')),
+                      DropdownMenuItem(
+                          value: 'approved', child: Text('approved')),
+                      DropdownMenuItem(
+                          value: 'rejected', child: Text('rejected')),
+                    ],
+                    onChanged: (v) async {
+                      if (v == null || id.isEmpty) return;
+                      try {
+                        await ref
+                            .read(adminRepositoryProvider)
+                            .updateHiringStatus(
+                              id: id,
+                              status: v,
+                              actorRole: 'admin',
+                            );
+                        ref.invalidate(adminHiringProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Hiring status updated')));
                         }
-                      },
-                    ),
-                  ],
-                ),
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e')));
+                        }
+                      }
+                    },
+                  ),
+                ],
               ),
             );
           },
@@ -768,58 +827,61 @@ class _OpsTabState extends ConsumerState<_OpsTab> {
         ref.invalidate(adminServicePdfJobsProvider);
       },
       child: ListView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Service PDF Job Runner',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+          _PanelCard(
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Service PDF Job Runner',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: _jcHeading,
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Manual trigger for /api/service-pdf-jobs/process-next',
-                        ),
-                      ],
-                    ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Manual trigger for /api/service-pdf-jobs/process-next',
+                        style: TextStyle(color: _jcMuted),
+                      ),
+                    ],
                   ),
-                  ElevatedButton.icon(
-                    onPressed: _processingNextJob
-                        ? null
-                        : () => _processNextJob(context),
-                    icon: _processingNextJob
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.play_arrow),
-                    label: const Text('Process Next'),
-                  ),
-                ],
-              ),
+                ),
+                FilledButton.icon(
+                  onPressed: _processingNextJob
+                      ? null
+                      : () => _processNextJob(context),
+                  icon: _processingNextJob
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_arrow),
+                  label: const Text('Process Next'),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
           const Text(
             'Open Disputes Queue',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: _jcHeading,
+            ),
           ),
           const SizedBox(height: 8),
           disputesAsync.when(
             data: (items) {
               if (items.isEmpty) {
-                return const Card(
-                  child: ListTile(
-                    title: Text('No open disputes.'),
-                  ),
+                return const _PanelCard(
+                  child: Text('No open disputes.'),
                 );
               }
               return Column(
@@ -839,36 +901,45 @@ class _OpsTabState extends ConsumerState<_OpsTab> {
               padding: EdgeInsets.all(16),
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => Card(
-              child: ListTile(
-                title: const Text('Failed to load open disputes'),
-                subtitle: Text(_adminReadableError(e)),
-                trailing: IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () => ref.invalidate(adminOpenDisputesProvider),
-                ),
+            error: (e, _) => _PanelCard(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                        'Failed to load open disputes: ${_adminReadableError(e)}'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () => ref.invalidate(adminOpenDisputesProvider),
+                  ),
+                ],
               ),
             ),
           ),
           const SizedBox(height: 12),
           const Text(
             'Recent Service PDF Jobs',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: _jcHeading,
+            ),
           ),
           const SizedBox(height: 8),
           jobsAsync.when(
             data: (jobs) {
               if (jobs.isEmpty) {
-                return const Card(
-                  child: ListTile(title: Text('No service PDF jobs yet.')),
+                return const _PanelCard(
+                  child: Text('No service PDF jobs yet.'),
                 );
               }
-              return Card(
+              return _PanelCard(
                 child: Column(
                   children: jobs
                       .take(10)
                       .map(
                         (job) => ListTile(
+                          contentPadding: EdgeInsets.zero,
                           title:
                               Text('${job.status.toUpperCase()} - ${job.id}'),
                           subtitle: Text(
@@ -885,14 +956,19 @@ class _OpsTabState extends ConsumerState<_OpsTab> {
               padding: EdgeInsets.all(16),
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => Card(
-              child: ListTile(
-                title: const Text('Failed to load service PDF jobs'),
-                subtitle: Text(_adminReadableError(e)),
-                trailing: IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () => ref.invalidate(adminServicePdfJobsProvider),
-                ),
+            error: (e, _) => _PanelCard(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                        'Failed to load service PDF jobs: ${_adminReadableError(e)}'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () =>
+                        ref.invalidate(adminServicePdfJobsProvider),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1010,19 +1086,28 @@ class _DisputeResolveCardState extends ConsumerState<_DisputeResolveCard> {
     final transactionId = _readField('transactionId', 'transaction_id');
     final conversationId = _readField('conversationId', 'conversation_id');
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _PanelCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Dispute ${_readField('id')}',
-              style: const TextStyle(fontWeight: FontWeight.w700),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Dispute ${_readField('id')}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: _jcHeading,
+                    ),
+                  ),
+                ),
+                _StatusPill(text: status, ok: status == 'resolved'),
+              ],
             ),
             const SizedBox(height: 6),
-            Text('Status: $status'),
+            Text('Status: $status', style: const TextStyle(color: _jcMuted)),
             if (transactionId.isNotEmpty) Text('Transaction: $transactionId'),
             if (conversationId.isNotEmpty)
               Text('Conversation: $conversationId'),
@@ -1072,7 +1157,7 @@ class _DisputeResolveCardState extends ConsumerState<_DisputeResolveCard> {
               title: const Text('Unfreeze escrow'),
             ),
             const SizedBox(height: 8),
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: _saving ? null : () => _submit(context),
               icon: _saving
                   ? const SizedBox(
@@ -1153,14 +1238,8 @@ class _AdminHeaderBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return _PanelCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _jcPanelBorder),
-      ),
       child: Row(
         children: [
           const Expanded(
@@ -1215,6 +1294,81 @@ class _AdminHeaderBlock extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PanelCard extends StatelessWidget {
+  const _PanelCard({
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({
+    required this.text,
+    required this.ok,
+  });
+
+  final String text;
+  final bool ok;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: ok ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: ok ? const Color(0xFF15803D) : const Color(0xFFB45309),
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandWordmark extends StatelessWidget {
+  const _BrandWordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/logo.png',
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'JUSTICE CITY LTD',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: _jcHeading,
+          ),
+        ),
       ),
     );
   }

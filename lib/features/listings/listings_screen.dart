@@ -576,13 +576,9 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
         backgroundColor: _jcPageBg,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Listings Console',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 30,
-            color: _jcHeading,
-          ),
+        title: const SizedBox(
+          height: 32,
+          child: _BrandWordmark(),
         ),
         actions: [
           IconButton(
@@ -602,8 +598,9 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
           final pending = items
               .where((e) => (e.status ?? '').toLowerCase().contains('pending'))
               .length;
-          final draft =
-              items.where((e) => (e.status ?? '').toLowerCase() == 'draft').length;
+          final draft = items
+              .where((e) => (e.status ?? '').toLowerCase() == 'draft')
+              .length;
           final published = items
               .where((e) => (e.status ?? '').toLowerCase() == 'published')
               .length;
@@ -725,12 +722,14 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                         color: const Color(0xFFE2E8F0),
                                       ),
-                                      child: const Icon(Icons.home_work_outlined),
+                                      child:
+                                          const Icon(Icons.home_work_outlined),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             l.title,
@@ -760,7 +759,8 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
                               ),
                               Expanded(
                                 flex: 3,
-                                child: _ListingStatusChip(status: l.status ?? '-'),
+                                child:
+                                    _ListingStatusChip(status: l.status ?? '-'),
                               ),
                               Expanded(
                                 flex: 3,
@@ -787,11 +787,13 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
                                 const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 )
                               else
                                 PopupMenuButton<_ListingRowAction>(
-                                  onSelected: (value) => _onActionSelected(value, l),
+                                  onSelected: (value) =>
+                                      _onActionSelected(value, l),
                                   itemBuilder: (_) =>
                                       _buildActionMenuItems(listing: l, me: me),
                                 ),
@@ -1003,6 +1005,28 @@ class _EmptyStateCard extends StatelessWidget {
       child: Text(
         message,
         style: const TextStyle(color: Color(0xFF64748B)),
+      ),
+    );
+  }
+}
+
+class _BrandWordmark extends StatelessWidget {
+  const _BrandWordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/logo.png',
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'JUSTICE CITY LTD',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: _jcHeading,
+          ),
+        ),
       ),
     );
   }

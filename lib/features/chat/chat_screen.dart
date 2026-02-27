@@ -50,13 +50,9 @@ class ChatScreen extends ConsumerWidget {
         backgroundColor: _jcPageBg,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Chat Inbox',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 30,
-            color: _jcHeading,
-          ),
+        title: const SizedBox(
+          height: 32,
+          child: _BrandWordmark(),
         ),
         actions: [
           IconButton(
@@ -107,7 +103,8 @@ class ChatScreen extends ConsumerWidget {
                         children: data.conversations
                             .map((conversation) => Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
-                                  child: _ConversationTile(conversation: conversation),
+                                  child: _ConversationTile(
+                                      conversation: conversation),
                                 ))
                             .toList(),
                       ),
@@ -133,7 +130,8 @@ class ChatInboxData {
 }
 
 class _InboxHeader extends StatelessWidget {
-  const _InboxHeader({required this.totalConversations, required this.totalIssues});
+  const _InboxHeader(
+      {required this.totalConversations, required this.totalIssues});
   final int totalConversations;
   final int totalIssues;
 
@@ -149,18 +147,37 @@ class _InboxHeader extends StatelessWidget {
       child: Row(
         children: [
           const Expanded(
-            child: Text(
-              'Chat Workspace',
-              style: TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-                color: _jcHeading,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Chat Workspace',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: _jcHeading,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Track issue cards, listing discussions, and support threads.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: _jcMuted,
+                  ),
+                ),
+              ],
             ),
           ),
-          _pill('Threads', '$totalConversations'),
           const SizedBox(width: 8),
-          _pill('Issues', '$totalIssues'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _pill('Threads', '$totalConversations'),
+              const SizedBox(height: 8),
+              _pill('Issues', '$totalIssues'),
+            ],
+          ),
         ],
       ),
     );
@@ -207,15 +224,32 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
-              color: _jcHeading,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.forum_outlined,
+                    color: _jcHeading, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: _jcHeading,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             subtitle,
             style: const TextStyle(fontSize: 14, color: _jcMuted),
@@ -260,13 +294,17 @@ class _IssueCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: isUnread ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
+                color: isUnread
+                    ? const Color(0xFFFEF3C7)
+                    : const Color(0xFFDCFCE7),
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
                 isUnread ? 'Unread' : 'Read',
                 style: TextStyle(
-                  color: isUnread ? const Color(0xFFB45309) : const Color(0xFF15803D),
+                  color: isUnread
+                      ? const Color(0xFFB45309)
+                      : const Color(0xFF15803D),
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
@@ -277,11 +315,18 @@ class _IssueCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(card.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    card.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: _jcHeading,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     card.message,
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+                    style:
+                        const TextStyle(fontSize: 14, color: Color(0xFF475569)),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -336,7 +381,8 @@ class _ConversationTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(title,
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
                   if ((conversation.lastMessage ?? '').trim().isNotEmpty)
                     Text(
                       conversation.lastMessage!,
@@ -349,6 +395,28 @@ class _ConversationTile extends StatelessWidget {
             ),
             const Icon(Icons.chevron_right),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandWordmark extends StatelessWidget {
+  const _BrandWordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/logo.png',
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'JUSTICE CITY LTD',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: _jcHeading,
+          ),
         ),
       ),
     );
