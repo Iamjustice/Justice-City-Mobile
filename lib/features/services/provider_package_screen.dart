@@ -8,6 +8,11 @@ import '../../state/repositories_providers.dart';
 import '../../state/services_providers.dart';
 import '../../state/session_provider.dart';
 
+const _jcPageBg = Color(0xFFF4F7FB);
+const _jcPanelBorder = Color(0xFFE2E8F0);
+const _jcHeading = Color(0xFF0F172A);
+const _jcMuted = Color(0xFF64748B);
+
 class ProviderPackageScreen extends ConsumerStatefulWidget {
   const ProviderPackageScreen({super.key, required this.token});
 
@@ -149,11 +154,18 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
     final pkgAsync = ref.watch(providerPackageProvider(widget.token));
 
     return Scaffold(
+      backgroundColor: _jcPageBg,
       appBar: AppBar(
-        title: const Text('Provider Package'),
+        backgroundColor: _jcPageBg,
+        surfaceTintColor: Colors.transparent,
+        title: const SizedBox(
+          height: 32,
+          child: _BrandWordmark(),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh package',
             onPressed: () =>
                 ref.invalidate(providerPackageProvider(widget.token)),
           ),
@@ -175,239 +187,335 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
               ref.watch(servicePdfJobsByConversationProvider(conversationId));
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Status: ${pkg.status}',
-                        style: Theme.of(context).textTheme.titleMedium,
+              const _PanelCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Provider Package',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: _jcHeading,
                       ),
-                      const SizedBox(height: 8),
-                      Text('Conversation ID: ${pkg.conversationId}'),
-                      if (pkg.serviceRequestId != null)
-                        Text('Service Request ID: ${pkg.serviceRequestId}'),
-                      const SizedBox(height: 8),
-                      Text('Expires: ${pkg.expiresAt}'),
-                      if (pkg.openedAt != null) Text('Opened: ${pkg.openedAt}'),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Link ID: ${pkg.linkId}',
-                        style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Token-based package with attachments, transcript, provider links, and PDF job controls.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _jcMuted,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
-              Text('Payload', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SelectableText(payloadPretty),
+              _PanelCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Package Summary',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: _jcHeading,
+                            ),
+                          ),
+                        ),
+                        _StatusTag(
+                          text: pkg.status,
+                          active: pkg.status.toLowerCase() == 'active' ||
+                              pkg.status.toLowerCase() == 'opened',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _SummaryRow(
+                        label: 'Conversation ID', value: pkg.conversationId),
+                    _SummaryRow(
+                        label: 'Service Request ID',
+                        value: pkg.serviceRequestId ?? '-'),
+                    _SummaryRow(label: 'Expires', value: pkg.expiresAt),
+                    _SummaryRow(label: 'Opened', value: pkg.openedAt ?? '-'),
+                    _SummaryRow(label: 'Link ID', value: pkg.linkId),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Text('Attachments',
-                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              const _SectionTitle('Payload'),
               const SizedBox(height: 8),
-              if (pkg.attachments.isEmpty) const Text('No attachments.'),
-              for (final f in pkg.attachments) ...[
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.attach_file),
-                    title: Text(f.fileName),
-                    subtitle: SelectableText(
-                        f.signedUrl ?? '${f.bucketId}/${f.storagePath}'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-              if (pkg.transcript != null) ...[
-                const SizedBox(height: 16),
-                Text('Transcript',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.description_outlined),
-                    title: Text(pkg.transcript!.fileName),
-                    subtitle: SelectableText(
-                      pkg.transcript!.signedUrl ??
-                          '${pkg.transcript!.bucketId}/${pkg.transcript!.storagePath}',
+              _PanelCard(
+                child: SelectableText(payloadPretty),
+              ),
+              const SizedBox(height: 16),
+              const _SectionTitle('Attachments'),
+              const SizedBox(height: 8),
+              if (pkg.attachments.isEmpty)
+                const _PanelCard(child: Text('No attachments.'))
+              else
+                ...pkg.attachments.map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _PanelCard(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.attach_file, color: _jcMuted),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  f.fileName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: _jcHeading,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                SelectableText(
+                                  f.signedUrl ??
+                                      '${f.bucketId}/${f.storagePath}',
+                                  style: const TextStyle(color: _jcMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ],
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
+              if (pkg.transcript != null) ...[
+                const SizedBox(height: 16),
+                const _SectionTitle('Transcript'),
+                const SizedBox(height: 8),
+                _PanelCard(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Service Ops',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      const Icon(Icons.description_outlined, color: _jcMuted),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              pkg.transcript!.fileName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: _jcHeading,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            SelectableText(
+                              pkg.transcript!.signedUrl ??
+                                  '${pkg.transcript!.bucketId}/${pkg.transcript!.storagePath}',
+                              style: const TextStyle(color: _jcMuted),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Text('Your role: $role'),
-                      const SizedBox(height: 12),
-                      if (canCreateLinks) ...[
-                        TextField(
-                          controller: _providerUserIdCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Provider user ID (optional)',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _serviceRequestIdCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Service request ID (optional)',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _payloadCtrl,
-                          minLines: 2,
-                          maxLines: 4,
-                          decoration: const InputDecoration(
-                            labelText: 'Payload JSON (optional)',
-                            hintText: '{"source":"mobile"}',
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        FilledButton.icon(
-                          onPressed: _creatingLink
-                              ? null
-                              : () async {
-                                  setState(() => _creatingLink = true);
-                                  try {
-                                    await _createProviderLink(conversationId);
-                                  } on FormatException catch (e) {
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content:
-                                            Text('Payload error: ${e.message}'),
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Create link failed: ${_readableApiError(e)}',
-                                        ),
-                                      ),
-                                    );
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() => _creatingLink = false);
-                                    }
-                                  }
-                                },
-                          icon: _creatingLink
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.link),
-                          label: const Text('Create Provider Link'),
-                        ),
-                      ] else
-                        const Text(
-                          'Only admin/support/agent can create provider links.',
-                        ),
-                      const SizedBox(height: 10),
-                      if (canQueuePdf)
-                        OutlinedButton.icon(
-                          onPressed: _queuingPdf
-                              ? null
-                              : () async {
-                                  setState(() => _queuingPdf = true);
-                                  try {
-                                    await _queueServicePdfJob(
-                                      conversationId,
-                                      serviceRequestId: pkg.serviceRequestId,
-                                    );
-                                  } catch (e) {
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Queue job failed: ${_readableApiError(e)}',
-                                        ),
-                                      ),
-                                    );
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() => _queuingPdf = false);
-                                    }
-                                  }
-                                },
-                          icon: _queuingPdf
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.picture_as_pdf_outlined),
-                          label: const Text('Queue Service PDF Job'),
-                        )
-                      else
-                        const Text(
-                          'Only admin/support/agent can queue service PDF jobs.',
-                        ),
-                      if (_latestPackageUrl != null &&
-                          _latestPackageUrl!.trim().isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Latest provider package URL:',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 4),
-                        SelectableText(_latestPackageUrl!),
-                        if (_latestToken != null && _latestToken!.isNotEmpty)
-                          SelectableText('Token: $_latestToken'),
-                      ],
                     ],
                   ),
                 ),
+              ],
+              const SizedBox(height: 16),
+              _PanelCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Service Operations',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Your role: $role',
+                        style: const TextStyle(color: _jcMuted)),
+                    const SizedBox(height: 12),
+                    if (canCreateLinks) ...[
+                      TextField(
+                        controller: _providerUserIdCtrl,
+                        decoration:
+                            _fieldDecoration('Provider user ID (optional)'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _serviceRequestIdCtrl,
+                        decoration:
+                            _fieldDecoration('Service request ID (optional)'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _payloadCtrl,
+                        minLines: 2,
+                        maxLines: 4,
+                        decoration: _fieldDecoration(
+                          'Payload JSON (optional)',
+                          hint: '{"source":"mobile"}',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        onPressed: _creatingLink
+                            ? null
+                            : () async {
+                                setState(() => _creatingLink = true);
+                                try {
+                                  await _createProviderLink(conversationId);
+                                } on FormatException catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            'Payload error: ${e.message}')),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Create link failed: ${_readableApiError(e)}'),
+                                    ),
+                                  );
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _creatingLink = false);
+                                  }
+                                }
+                              },
+                        icon: _creatingLink
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.link),
+                        label: const Text('Create provider link'),
+                      ),
+                    ] else
+                      const Text(
+                          'Only admin/support/agent can create provider links.'),
+                    const SizedBox(height: 10),
+                    if (canQueuePdf)
+                      OutlinedButton.icon(
+                        onPressed: _queuingPdf
+                            ? null
+                            : () async {
+                                setState(() => _queuingPdf = true);
+                                try {
+                                  await _queueServicePdfJob(
+                                    conversationId,
+                                    serviceRequestId: pkg.serviceRequestId,
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Queue job failed: ${_readableApiError(e)}'),
+                                    ),
+                                  );
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _queuingPdf = false);
+                                  }
+                                }
+                              },
+                        icon: _queuingPdf
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.picture_as_pdf_outlined),
+                        label: const Text('Queue service PDF job'),
+                      )
+                    else
+                      const Text(
+                          'Only admin/support/agent can queue service PDF jobs.'),
+                    if (_latestPackageUrl != null &&
+                        _latestPackageUrl!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Latest provider package URL',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 4),
+                      SelectableText(_latestPackageUrl!),
+                      if (_latestToken != null && _latestToken!.isNotEmpty)
+                        SelectableText('Token: $_latestToken'),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
-              Text('Provider Links',
-                  style: Theme.of(context).textTheme.titleMedium),
+              const _SectionTitle('Provider Links'),
               const SizedBox(height: 8),
               linksAsync.when(
                 data: (links) {
                   if (links.isEmpty) {
-                    return const Text('No provider links yet.');
+                    return const _PanelCard(
+                        child: Text('No provider links yet.'));
                   }
                   return Column(
                     children: links.map((link) {
                       final canRevoke = canRevokeLinks &&
                           (link.status == 'active' || link.status == 'opened');
-                      return Card(
-                        child: ListTile(
-                          title:
-                              Text('${link.status.toUpperCase()} - ${link.id}'),
-                          subtitle: Text(
-                            'Provider: ${link.providerUserId ?? '-'}\n'
-                            'Token hint: ${link.tokenHint ?? '-'}\n'
-                            'Expires: ${link.expiresAt}',
-                          ),
-                          trailing: canRevoke
-                              ? TextButton(
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _PanelCard(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            link.id,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              color: _jcHeading,
+                                            ),
+                                          ),
+                                        ),
+                                        _StatusTag(
+                                          text: link.status,
+                                          active: link.status == 'active' ||
+                                              link.status == 'opened',
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Provider: ${link.providerUserId ?? '-'}\n'
+                                      'Token hint: ${link.tokenHint ?? '-'}\n'
+                                      'Expires: ${link.expiresAt}',
+                                      style: const TextStyle(color: _jcMuted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (canRevoke)
+                                TextButton(
                                   onPressed: _revokingLinkId == link.id
                                       ? null
                                       : () async {
@@ -415,17 +523,14 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
                                               () => _revokingLinkId = link.id);
                                           try {
                                             await _revokeProviderLink(
-                                              conversationId,
-                                              link.id,
-                                            );
+                                                conversationId, link.id);
                                           } catch (e) {
                                             if (!context.mounted) return;
                                             ScaffoldMessenger.of(context)
                                                 .showSnackBar(
                                               SnackBar(
                                                 content: Text(
-                                                  'Revoke failed: ${_readableApiError(e)}',
-                                                ),
+                                                    'Revoke failed: ${_readableApiError(e)}'),
                                               ),
                                             );
                                           } finally {
@@ -440,66 +545,126 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
                                           width: 16,
                                           height: 16,
                                           child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
+                                              strokeWidth: 2),
                                         )
                                       : const Text('Revoke'),
-                                )
-                              : null,
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (e, _) => Text('Failed to load provider links: $e'),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Service PDF Jobs',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              pdfJobsAsync.when(
-                data: (jobs) {
-                  if (jobs.isEmpty) return const Text('No PDF jobs yet.');
-                  return Column(
-                    children: jobs.map((job) {
-                      return Card(
-                        child: ListTile(
-                          title:
-                              Text('${job.status.toUpperCase()} - ${job.id}'),
-                          subtitle: Text(
-                            'Attempts: ${job.attemptCount}/${job.maxAttempts}\n'
-                            'Output: ${job.outputBucket}/${job.outputPath ?? '-'}\n'
-                            'Updated: ${job.updatedAt}\n'
-                            '${job.errorMessage == null ? '' : 'Error: ${job.errorMessage}'}',
+                                ),
+                            ],
                           ),
                         ),
                       );
                     }).toList(),
                   );
                 },
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
+                loading: () => const _PanelCard(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 10),
+                      Text('Loading provider links...'),
+                    ],
+                  ),
                 ),
-                error: (e, _) => Text('Failed to load PDF jobs: $e'),
+                error: (e, _) => _PanelCard(
+                  child: Text('Failed to load provider links: $e'),
+                ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Tip: Copy a signedUrl and open it in your browser to download/view the file.',
+              const _SectionTitle('Service PDF Jobs'),
+              const SizedBox(height: 8),
+              pdfJobsAsync.when(
+                data: (jobs) {
+                  if (jobs.isEmpty) {
+                    return const _PanelCard(child: Text('No PDF jobs yet.'));
+                  }
+                  return Column(
+                    children: jobs.map((job) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _PanelCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      job.id,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: _jcHeading,
+                                      ),
+                                    ),
+                                  ),
+                                  _StatusTag(
+                                    text: job.status,
+                                    active: job.status == 'completed',
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Attempts: ${job.attemptCount}/${job.maxAttempts}\n'
+                                'Output: ${job.outputBucket}/${job.outputPath ?? '-'}\n'
+                                'Updated: ${job.updatedAt}\n'
+                                '${job.errorMessage == null ? '' : 'Error: ${job.errorMessage}'}',
+                                style: const TextStyle(color: _jcMuted),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+                loading: () => const _PanelCard(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 10),
+                      Text('Loading PDF jobs...'),
+                    ],
+                  ),
+                ),
+                error: (e, _) => _PanelCard(
+                  child: Text('Failed to load PDF jobs: $e'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const _PanelCard(
+                child: Text(
+                  'Tip: Copy a signed URL and open it in your browser to download the file.',
+                  style: TextStyle(color: _jcMuted),
+                ),
               ),
             ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text('Failed to load provider package: $e'),
+        error: (e, _) => ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          children: [
+            const _PanelCard(
+              child: Text(
+                'Provider Package',
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  color: _jcHeading,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _PanelCard(child: Text('Failed to load provider package: $e')),
+          ],
         ),
       ),
     );
@@ -520,4 +685,148 @@ String _readableApiError(Object error) {
   if (status == '422') return '422 Validation failed: $detail';
   if (status == '502') return '502 Service error: $detail';
   return '$status: $detail';
+}
+
+InputDecoration _fieldDecoration(String label, {String? hint}) {
+  return InputDecoration(
+    labelText: label,
+    hintText: hint,
+    filled: true,
+    fillColor: const Color(0xFFF8FAFC),
+    border: const OutlineInputBorder(
+      borderRadius: BorderRadius.all(Radius.circular(10)),
+    ),
+    enabledBorder: const OutlineInputBorder(
+      borderSide: BorderSide(color: _jcPanelBorder),
+      borderRadius: BorderRadius.all(Radius.circular(10)),
+    ),
+    labelStyle: const TextStyle(color: _jcMuted),
+  );
+}
+
+class _PanelCard extends StatelessWidget {
+  const _PanelCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: _jcHeading,
+      ),
+    );
+  }
+}
+
+class _StatusTag extends StatelessWidget {
+  const _StatusTag({
+    required this.text,
+    required this.active,
+  });
+
+  final String text;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFFDCFCE7) : const Color(0xFFE2E8F0),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: active ? const Color(0xFF15803D) : const Color(0xFF475569),
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: _jcMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Color(0xFF334155)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrandWordmark extends StatelessWidget {
+  const _BrandWordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/logo.png',
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'JUSTICE CITY LTD',
+          style: TextStyle(
+            color: _jcHeading,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
 }

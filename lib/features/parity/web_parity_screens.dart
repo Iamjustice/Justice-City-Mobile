@@ -10,9 +10,22 @@ import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
 import '../../state/verification_provider.dart';
 
+const _jcPageBg = Color(0xFFF4F7FB);
+const _jcPanelBorder = Color(0xFFE2E8F0);
+const _jcHeading = Color(0xFF0F172A);
+const _jcMuted = Color(0xFF64748B);
+
 String _resolveRequesterRole(WidgetRef ref) {
-  final role = (ref.read(meProvider).valueOrNull?.role ?? '').trim().toLowerCase();
-  const allowedRoles = <String>{'admin', 'agent', 'seller', 'buyer', 'owner', 'renter'};
+  final role =
+      (ref.read(meProvider).valueOrNull?.role ?? '').trim().toLowerCase();
+  const allowedRoles = <String>{
+    'admin',
+    'agent',
+    'seller',
+    'buyer',
+    'owner',
+    'renter'
+  };
   return allowedRoles.contains(role) ? role : 'buyer';
 }
 
@@ -44,14 +57,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final meAsync = ref.watch(meProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+    return _ParityScaffold(
+      title: 'Profile',
+      subtitle: 'Personal information, identity details, and account records.',
       body: meAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Failed to load profile: $e')),
+        loading: () => const _PanelCard(
+          child: Row(
+            children: [
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 10),
+              Text('Loading profile...'),
+            ],
+          ),
+        ),
+        error: (e, _) => _PanelCard(
+          child: Text('Failed to load profile: $e'),
+        ),
         data: (me) {
           if (me == null) {
-            return const Center(child: Text('Sign in to view profile.'));
+            return const _PanelCard(
+              child: Text('Sign in to view profile.'),
+            );
           }
 
           if (!_hydrated) {
@@ -62,87 +92,156 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             _hydrated = true;
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          final identity = (me.fullName ?? me.email ?? 'Member').trim();
+          final initial = identity.isEmpty ? 'M' : identity[0].toUpperCase();
+          final roleLabel = (me.role ?? 'member').trim();
+          final capitalRole = roleLabel.isEmpty
+              ? 'Member'
+              : '${roleLabel[0].toUpperCase()}${roleLabel.substring(1)}';
+
+          return Column(
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Email: ${me.email ?? "-"}'),
-                      Text('Nickname: ${me.nickname ?? "-"}'),
-                      Text('Role: ${me.role ?? "-"}'),
-                      Text('Gender: ${me.gender ?? "-"}'),
-                      Text('Verified: ${me.isVerified == true ? "Yes" : "No"}'),
-                    ],
-                  ),
+              _PanelCard(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: const Color(0xFFE2E8F0),
+                      child: Text(
+                        initial,
+                        style: const TextStyle(
+                          color: _jcHeading,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            identity.isEmpty ? 'Member' : identity,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: _jcHeading,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$capitalRole - ${me.email ?? '-'}',
+                            style: const TextStyle(color: _jcMuted),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _StatusTag(
+                                text: me.isVerified == true
+                                    ? 'Verified'
+                                    : 'Not Verified',
+                                active: me.isVerified == true,
+                              ),
+                              _StatusTag(
+                                text: 'Gender: ${me.gender ?? '-'}',
+                                active: false,
+                              ),
+                              _StatusTag(
+                                text: 'Nickname: ${me.nickname ?? '-'}',
+                                active: false,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _fullName,
-                decoration: const InputDecoration(labelText: 'Full name', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _dateOfBirth,
-                decoration: const InputDecoration(
-                  labelText: 'Date of birth (YYYY-MM-DD)',
-                  border: OutlineInputBorder(),
+              _PanelCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Personal Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _fullName,
+                      decoration: _fieldDecoration('Full name'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _dateOfBirth,
+                      decoration:
+                          _fieldDecoration('Date of birth (YYYY-MM-DD)'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _homeAddress,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: _fieldDecoration('Home address'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _officeAddress,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: _fieldDecoration('Office address'),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: _saving
+                          ? null
+                          : () async {
+                              setState(() => _saving = true);
+                              try {
+                                await ref
+                                    .read(authRepositoryProvider)
+                                    .patchProfile(
+                                      fullName: _fullName.text.trim(),
+                                      dateOfBirth: _dateOfBirth.text.trim(),
+                                      homeAddress: _homeAddress.text.trim(),
+                                      officeAddress: _officeAddress.text.trim(),
+                                    );
+                                ref.invalidate(meProvider);
+                                ref.invalidate(verificationStatusProvider);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Profile updated.')),
+                                );
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Update failed: $e')),
+                                );
+                              } finally {
+                                if (mounted) setState(() => _saving = false);
+                              }
+                            },
+                      icon: _saving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: const Text('Save profile'),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _homeAddress,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Home address', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _officeAddress,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Office address', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _saving
-                    ? null
-                    : () async {
-                        setState(() => _saving = true);
-                        try {
-                          await ref.read(authRepositoryProvider).patchProfile(
-                                fullName: _fullName.text.trim(),
-                                dateOfBirth: _dateOfBirth.text.trim(),
-                                homeAddress: _homeAddress.text.trim(),
-                                officeAddress: _officeAddress.text.trim(),
-                              );
-                          ref.invalidate(meProvider);
-                          ref.invalidate(verificationStatusProvider);
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Profile updated.')),
-                          );
-                        } catch (e) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Update failed: $e')),
-                          );
-                        } finally {
-                          if (mounted) setState(() => _saving = false);
-                        }
-                      },
-                icon: _saving
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_outlined),
-                label: const Text('Save profile'),
               ),
             ],
           );
@@ -156,7 +255,8 @@ class RequestCallbackScreen extends ConsumerStatefulWidget {
   const RequestCallbackScreen({super.key});
 
   @override
-  ConsumerState<RequestCallbackScreen> createState() => _RequestCallbackScreenState();
+  ConsumerState<RequestCallbackScreen> createState() =>
+      _RequestCallbackScreenState();
 }
 
 class _RequestCallbackScreenState extends ConsumerState<RequestCallbackScreen> {
@@ -173,41 +273,42 @@ class _RequestCallbackScreenState extends ConsumerState<RequestCallbackScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Request Callback')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text('Request a support callback and continue in chat.'),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _phone,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Phone (E.164)',
-              hintText: '+2349012345678',
-              border: OutlineInputBorder(),
+    return _ParityScaffold(
+      title: 'Request Callback',
+      subtitle: 'Ask support to call you and continue the request in chat.',
+      body: _PanelCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _phone,
+              keyboardType: TextInputType.phone,
+              decoration: _fieldDecoration(
+                'Phone (E.164)',
+                hint: '+2349012345678',
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _notes,
-            minLines: 2,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Notes',
-              border: OutlineInputBorder(),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _notes,
+              minLines: 3,
+              maxLines: 5,
+              decoration: _fieldDecoration('Notes'),
             ),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _sending ? null : _submit,
-            icon: _sending
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.phone_forwarded_outlined),
-            label: const Text('Send callback request'),
-          ),
-        ],
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _sending ? null : _submit,
+              icon: _sending
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.phone_forwarded_outlined),
+              label: const Text('Send callback request'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -245,7 +346,8 @@ class _RequestCallbackScreenState extends ConsumerState<RequestCallbackScreen> {
       context.go('/chat/$convoId');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed: $e')));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -280,71 +382,75 @@ class _ScheduleTourScreenState extends ConsumerState<ScheduleTourScreen> {
         : '${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}';
     final selectedTime = _time == null ? 'Select time' : _time!.format(context);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Schedule Tour')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            controller: _propertyRef,
-            decoration: const InputDecoration(
-              labelText: 'Property reference (optional)',
-              border: OutlineInputBorder(),
+    return _ParityScaffold(
+      title: 'Schedule Tour',
+      subtitle:
+          'Book a property inspection and route details into support chat.',
+      body: _PanelCard(
+        child: Column(
+          children: [
+            TextField(
+              controller: _propertyRef,
+              decoration: _fieldDecoration('Property reference (optional)'),
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 180)),
-                    );
-                    if (picked != null) {
-                      setState(() => _date = picked);
-                    }
-                  },
-                  icon: const Icon(Icons.calendar_today),
-                  label: Text(selectedDate),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 180)),
+                      );
+                      if (picked != null) {
+                        setState(() => _date = picked);
+                      }
+                    },
+                    icon: const Icon(Icons.calendar_today),
+                    label: Text(selectedDate),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.now(),
-                    );
-                    if (picked != null) {
-                      setState(() => _time = picked);
-                    }
-                  },
-                  icon: const Icon(Icons.schedule),
-                  label: Text(selectedTime),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (picked != null) {
+                        setState(() => _time = picked);
+                      }
+                    },
+                    icon: const Icon(Icons.schedule),
+                    label: Text(selectedTime),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _notes,
-            minLines: 2,
-            maxLines: 4,
-            decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _sending ? null : _submit,
-            icon: _sending
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.event_available_outlined),
-            label: const Text('Send tour request'),
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _notes,
+              minLines: 3,
+              maxLines: 5,
+              decoration: _fieldDecoration('Notes'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _sending ? null : _submit,
+              icon: _sending
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.event_available_outlined),
+              label: const Text('Send tour request'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -365,11 +471,13 @@ class _ScheduleTourScreenState extends ConsumerState<ScheduleTourScreen> {
 
     setState(() => _sending = true);
     try {
-      final when = DateTime(_date!.year, _date!.month, _date!.day, _time!.hour, _time!.minute);
+      final when = DateTime(
+          _date!.year, _date!.month, _date!.day, _time!.hour, _time!.minute);
       final initialMessage = [
         'TOUR REQUEST',
         'Preferred: ${when.toIso8601String()}',
-        if (_propertyRef.text.trim().isNotEmpty) 'Property: ${_propertyRef.text.trim()}',
+        if (_propertyRef.text.trim().isNotEmpty)
+          'Property: ${_propertyRef.text.trim()}',
         if (_notes.text.trim().isNotEmpty) 'Notes: ${_notes.text.trim()}',
       ].join('\n');
 
@@ -388,7 +496,8 @@ class _ScheduleTourScreenState extends ConsumerState<ScheduleTourScreen> {
       context.go('/chat/$convoId');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed: $e')));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -440,66 +549,96 @@ class _HiringScreenState extends ConsumerState<HiringScreen> {
       _hydrated = true;
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Hiring Application')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(controller: _fullName, decoration: const InputDecoration(labelText: 'Full name', border: OutlineInputBorder())),
-          const SizedBox(height: 10),
-          TextField(controller: _email, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
-          const SizedBox(height: 10),
-          TextField(controller: _phone, decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder())),
-          const SizedBox(height: 10),
-          TextField(controller: _location, decoration: const InputDecoration(labelText: 'Location', border: OutlineInputBorder())),
-          const SizedBox(height: 10),
-          DropdownButtonFormField<String>(
-            initialValue: _serviceTrack,
-            decoration: const InputDecoration(labelText: 'Service track', border: OutlineInputBorder()),
-            items: const [
-              DropdownMenuItem(value: 'land_surveying', child: Text('Land Surveying')),
-              DropdownMenuItem(value: 'real_estate_valuation', child: Text('Property Valuation')),
-              DropdownMenuItem(value: 'land_verification', child: Text('Land Verification')),
-              DropdownMenuItem(value: 'snagging', child: Text('Snagging')),
-            ],
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() => _serviceTrack = v);
-            },
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _yearsExperience,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Years experience', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 10),
-          TextField(controller: _licenseId, decoration: const InputDecoration(labelText: 'License ID', border: OutlineInputBorder())),
-          const SizedBox(height: 10),
-          TextField(controller: _portfolioUrl, decoration: const InputDecoration(labelText: 'Portfolio URL (optional)', border: OutlineInputBorder())),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _summary,
-            minLines: 3,
-            maxLines: 6,
-            decoration: const InputDecoration(labelText: 'Professional summary', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 10),
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('I consent to compliance checks'),
-            value: _consented,
-            onChanged: (v) => setState(() => _consented = v == true),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _submitting ? null : _submit,
-            icon: _submitting
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.send_outlined),
-            label: const Text('Submit application'),
-          ),
-        ],
+    return _ParityScaffold(
+      title: 'Hiring Application',
+      subtitle: 'Professional partner onboarding for field service delivery.',
+      body: _PanelCard(
+        child: Column(
+          children: [
+            TextField(
+              controller: _fullName,
+              decoration: _fieldDecoration('Full name'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _email,
+              decoration: _fieldDecoration('Email'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _phone,
+              decoration: _fieldDecoration('Phone'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _location,
+              decoration: _fieldDecoration('Location'),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              initialValue: _serviceTrack,
+              decoration: _fieldDecoration('Service track'),
+              items: const [
+                DropdownMenuItem(
+                    value: 'land_surveying', child: Text('Land Surveying')),
+                DropdownMenuItem(
+                  value: 'real_estate_valuation',
+                  child: Text('Property Valuation'),
+                ),
+                DropdownMenuItem(
+                    value: 'land_verification',
+                    child: Text('Land Verification')),
+                DropdownMenuItem(value: 'snagging', child: Text('Snagging')),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => _serviceTrack = v);
+              },
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _yearsExperience,
+              keyboardType: TextInputType.number,
+              decoration: _fieldDecoration('Years experience'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _licenseId,
+              decoration: _fieldDecoration('License ID'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _portfolioUrl,
+              decoration: _fieldDecoration('Portfolio URL (optional)'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _summary,
+              minLines: 3,
+              maxLines: 6,
+              decoration: _fieldDecoration('Professional summary'),
+            ),
+            const SizedBox(height: 10),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('I consent to compliance checks'),
+              value: _consented,
+              onChanged: (v) => setState(() => _consented = v == true),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _submitting ? null : _submit,
+              icon: _submitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send_outlined),
+              label: const Text('Submit application'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -518,15 +657,21 @@ class _HiringScreenState extends ConsumerState<HiringScreen> {
     final location = _location.text.trim();
     final licenseId = _licenseId.text.trim();
     final summary = _summary.text.trim();
-    if (fullName.isEmpty || email.isEmpty || phone.isEmpty || location.isEmpty) {
+    if (fullName.isEmpty ||
+        email.isEmpty ||
+        phone.isEmpty ||
+        location.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Full name, email, phone, and location are required.')),
+        const SnackBar(
+            content:
+                Text('Full name, email, phone, and location are required.')),
       );
       return;
     }
     if (licenseId.isEmpty || summary.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('License ID and professional summary are required.')),
+        const SnackBar(
+            content: Text('License ID and professional summary are required.')),
       );
       return;
     }
@@ -535,21 +680,21 @@ class _HiringScreenState extends ConsumerState<HiringScreen> {
     try {
       final session = ref.read(sessionProvider);
       await ref.read(dioProvider).post(
-            ApiEndpoints.hiringApplications,
-            data: {
-              'fullName': fullName,
-              'email': email,
-              'phone': phone,
-              'location': location,
-              'serviceTrack': _serviceTrack,
-              'yearsExperience': int.tryParse(_yearsExperience.text.trim()) ?? 0,
-              'licenseId': licenseId,
-              'portfolioUrl': _portfolioUrl.text.trim(),
-              'summary': summary,
-              'consentedToChecks': true,
-              if (session != null) 'applicantUserId': session.userId,
-            },
-          );
+        ApiEndpoints.hiringApplications,
+        data: {
+          'fullName': fullName,
+          'email': email,
+          'phone': phone,
+          'location': location,
+          'serviceTrack': _serviceTrack,
+          'yearsExperience': int.tryParse(_yearsExperience.text.trim()) ?? 0,
+          'licenseId': licenseId,
+          'portfolioUrl': _portfolioUrl.text.trim(),
+          'summary': summary,
+          'consentedToChecks': true,
+          if (session != null) 'applicantUserId': session.userId,
+        },
+      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -558,13 +703,16 @@ class _HiringScreenState extends ConsumerState<HiringScreen> {
       context.go('/home');
     } on DioException catch (e) {
       if (!mounted) return;
-      final message = (e.response?.data is Map && (e.response?.data as Map)['message'] != null)
+      final message = (e.response?.data is Map &&
+              (e.response?.data as Map)['message'] != null)
           ? (e.response?.data as Map)['message'].toString()
           : e.message ?? 'Request failed';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed: $e')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -630,13 +778,167 @@ class _PolicyScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _ParityScaffold(
+      title: title,
+      subtitle:
+          'Policy reference for Justice City platform usage and compliance.',
+      body: Column(
+        children: [
+          for (final paragraph in paragraphs) ...[
+            _PanelCard(
+              child: Text(
+                paragraph,
+                style: const TextStyle(color: Color(0xFF334155)),
+              ),
+            ),
+            if (paragraph != paragraphs.last) const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ParityScaffold extends StatelessWidget {
+  const _ParityScaffold({
+    required this.title,
+    required this.subtitle,
+    required this.body,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget body;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: paragraphs.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, i) => Text(paragraphs[i]),
+      backgroundColor: _jcPageBg,
+      appBar: AppBar(
+        backgroundColor: _jcPageBg,
+        surfaceTintColor: Colors.transparent,
+        title: const SizedBox(
+          height: 32,
+          child: _BrandWordmark(),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        children: [
+          _PanelCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: _jcHeading,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: _jcMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          body,
+        ],
+      ),
+    );
+  }
+}
+
+class _PanelCard extends StatelessWidget {
+  const _PanelCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _StatusTag extends StatelessWidget {
+  const _StatusTag({
+    required this.text,
+    required this.active,
+  });
+
+  final String text;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFFDCFCE7) : const Color(0xFFE2E8F0),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: active ? const Color(0xFF15803D) : const Color(0xFF475569),
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+InputDecoration _fieldDecoration(String label, {String? hint}) {
+  return InputDecoration(
+    labelText: label,
+    hintText: hint,
+    filled: true,
+    fillColor: const Color(0xFFF8FAFC),
+    border: const OutlineInputBorder(
+      borderRadius: BorderRadius.all(Radius.circular(10)),
+    ),
+    enabledBorder: const OutlineInputBorder(
+      borderSide: BorderSide(color: _jcPanelBorder),
+      borderRadius: BorderRadius.all(Radius.circular(10)),
+    ),
+    labelStyle: const TextStyle(color: _jcMuted),
+  );
+}
+
+class _BrandWordmark extends StatelessWidget {
+  const _BrandWordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/logo.png',
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'JUSTICE CITY LTD',
+          style: TextStyle(
+            color: _jcHeading,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ),
     );
   }

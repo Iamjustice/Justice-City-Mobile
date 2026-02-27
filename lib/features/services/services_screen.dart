@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/models/service_offering.dart';
 import '../../state/me_provider.dart';
 import '../../state/session_provider.dart';
 import '../../state/repositories_providers.dart';
-
 import '../../state/services_providers.dart';
+
+const _jcPageBg = Color(0xFFF4F7FB);
+const _jcPanelBorder = Color(0xFFE2E8F0);
+const _jcHeading = Color(0xFF0F172A);
+const _jcMuted = Color(0xFF64748B);
 
 class ServicesScreen extends ConsumerWidget {
   const ServicesScreen({super.key});
@@ -16,11 +21,18 @@ class ServicesScreen extends ConsumerWidget {
     final offerings = ref.watch(serviceOfferingsProvider);
 
     return Scaffold(
+      backgroundColor: _jcPageBg,
       appBar: AppBar(
-        title: const Text('Professional Services'),
+        backgroundColor: _jcPageBg,
+        surfaceTintColor: Colors.transparent,
+        title: const SizedBox(
+          height: 32,
+          child: _BrandWordmark(),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh services',
             onPressed: () => ref.invalidate(serviceOfferingsProvider),
           ),
           IconButton(
@@ -37,95 +49,78 @@ class ServicesScreen extends ConsumerWidget {
         ],
       ),
       body: offerings.when(
-        data: (items) {
-          if (items.isEmpty) {
-            return const Center(child: Text('No service offerings yet.'));
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, i) {
-              final s = items[i];
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.work_outline),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              s.name,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                          Text(
-                            s.price,
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(s.description),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.timer_outlined, size: 18),
-                          const SizedBox(width: 6),
-                          Text('Turnaround: ${s.turnaround}'),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Code: ${s.code}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          FilledButton.icon(
-                            onPressed: () => _startServiceChat(context, ref, s),
-                            icon: const Icon(Icons.chat_bubble_outline),
-                            label: const Text('Start service chat'),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: () async {
-                              final token = await _promptToken(context);
-                              if (token != null && token.isNotEmpty) {
-                                if (!context.mounted) return;
-                                context.go(
-                                    '/provider-package/${Uri.encodeComponent(token)}');
-                              }
-                            },
-                            icon: const Icon(Icons.link),
-                            label: const Text('Open provider package'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+        data: (items) => ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          children: [
+            const _ServicesHeroCard(),
+            const SizedBox(height: 12),
+            if (items.isEmpty)
+              const _EmptyStateCard(message: 'No service offerings yet.'),
+            ...items.map(
+              (s) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ServiceOfferingCard(
+                  offering: s,
+                  onStartChat: () => _startServiceChat(context, ref, s),
+                  onOpenPackage: () async {
+                    final token = await _promptToken(context);
+                    if (token != null && token.isNotEmpty) {
+                      if (!context.mounted) return;
+                      context.go(
+                          '/provider-package/${Uri.encodeComponent(token)}');
+                    }
+                  },
                 ),
-              );
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text('Failed to load offerings: $e'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const _ShellCard(
+              child: Text(
+                'Service chats and provider packages are synchronized with your web dashboard.',
+                style: TextStyle(color: _jcMuted),
+              ),
+            ),
+          ],
+        ),
+        loading: () => ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          children: const [
+            _ServicesHeroCard(),
+            SizedBox(height: 12),
+            _ShellCard(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 10),
+                  Text('Loading service offerings...'),
+                ],
+              ),
+            ),
+          ],
+        ),
+        error: (e, _) => ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          children: [
+            const _ServicesHeroCard(),
+            const SizedBox(height: 12),
+            _ShellCard(
+              child: Text('Failed to load offerings: $e'),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Future<void> _startServiceChat(
-      BuildContext context, WidgetRef ref, dynamic offering) async {
+    BuildContext context,
+    WidgetRef ref,
+    ServiceOffering offering,
+  ) async {
     final session = ref.read(sessionProvider);
     if (session == null) {
       context.go('/auth');
@@ -133,8 +128,8 @@ class ServicesScreen extends ConsumerWidget {
     }
 
     String initialMessage;
-    final code = (offering.code as String?)?.toLowerCase() ?? '';
-    final name = (offering.name as String?) ?? 'service';
+    final code = offering.code.toLowerCase();
+    final name = offering.name;
 
     if (code == 'land_surveying') {
       initialMessage =
@@ -194,27 +189,309 @@ Future<String?> _promptToken(BuildContext context) async {
   final controller = TextEditingController();
   final result = await showDialog<String>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Open provider package'),
-      content: TextField(
-        controller: controller,
-        decoration: const InputDecoration(
-          labelText: 'Token',
-          hintText: 'Paste provider package token',
+    builder: (ctx) => Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _jcPanelBorder),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Open provider package',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _jcHeading,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Paste the secure token to open a provider package.',
+              style: TextStyle(color: _jcMuted),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Token',
+                hintText: 'Paste provider package token',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () =>
+                      Navigator.of(ctx).pop(controller.text.trim()),
+                  child: const Text('Open'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-          child: const Text('Open'),
-        ),
-      ],
     ),
   );
   controller.dispose();
   return result;
+}
+
+class _ServicesHeroCard extends StatelessWidget {
+  const _ServicesHeroCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ShellCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Professional Services',
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Land surveying, valuation, verification, snagging and provider package operations.',
+            style: TextStyle(
+              fontSize: 16,
+              color: _jcMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ServiceOfferingCard extends StatelessWidget {
+  const _ServiceOfferingCard({
+    required this.offering,
+    required this.onStartChat,
+    required this.onOpenPackage,
+  });
+
+  final ServiceOffering offering;
+  final VoidCallback onStartChat;
+  final VoidCallback onOpenPackage;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = _iconForOffering(offering);
+    return _ShellCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                height: 42,
+                width: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: _jcHeading),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      offering.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      offering.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _jcMuted),
+                    ),
+                  ],
+                ),
+              ),
+              _CodeTag(code: offering.code),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MetaChip(icon: Icons.payments_outlined, text: offering.price),
+              _MetaChip(icon: Icons.timer_outlined, text: offering.turnaround),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: onStartChat,
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Start service chat'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onOpenPackage,
+                  icon: const Icon(Icons.link),
+                  label: const Text('Open provider package'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _iconForOffering(ServiceOffering offering) {
+    final source = '${offering.icon} ${offering.code}'.toLowerCase();
+    if (source.contains('survey')) return Icons.map_outlined;
+    if (source.contains('valuation')) return Icons.analytics_outlined;
+    if (source.contains('verification')) return Icons.verified_user_outlined;
+    if (source.contains('snagging')) return Icons.handyman_outlined;
+    return Icons.work_outline;
+  }
+}
+
+class _ShellCard extends StatelessWidget {
+  const _ShellCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _CodeTag extends StatelessWidget {
+  const _CodeTag({required this.code});
+
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        code.toUpperCase(),
+        style: const TextStyle(
+          color: Color(0xFF1D4ED8),
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: _jcMuted),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: const TextStyle(
+              color: _jcMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyStateCard extends StatelessWidget {
+  const _EmptyStateCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ShellCard(
+      child: Text(
+        message,
+        style: const TextStyle(color: _jcMuted),
+      ),
+    );
+  }
+}
+
+class _BrandWordmark extends StatelessWidget {
+  const _BrandWordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/logo.png',
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'JUSTICE CITY LTD',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: _jcHeading,
+          ),
+        ),
+      ),
+    );
+  }
 }
