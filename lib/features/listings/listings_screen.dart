@@ -26,6 +26,12 @@ final listingsProvider = FutureProvider<List<Listing>>((ref) async {
   return ref.read(listingsRepositoryProvider).fetchAgentListings(actor: actor);
 });
 
+const _jcPageBg = Color(0xFFF4F7FB);
+const _jcPanelBorder = Color(0xFFE2E8F0);
+const _jcHeading = Color(0xFF0F172A);
+const _jcMuted = Color(0xFF64748B);
+const _jcRadius = 12.0;
+
 class ListingsScreen extends ConsumerStatefulWidget {
   const ListingsScreen({super.key});
 
@@ -517,7 +523,10 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
         return;
       case _ListingRowAction.verification:
         if (!mounted) return;
-        context.go('/property/${listing.id}', extra: listing);
+        context.go(
+          '/property/${listing.id}?view=verification',
+          extra: listing,
+        );
         return;
       case _ListingRowAction.edit:
         await _openEditDialog(listing);
@@ -562,8 +571,19 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
     final canCreate = _isOperatorRole(me);
 
     return Scaffold(
+      backgroundColor: _jcPageBg,
       appBar: AppBar(
-        title: const Text('Listings Console'),
+        backgroundColor: _jcPageBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Listings Console',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 30,
+            color: _jcHeading,
+          ),
+        ),
         actions: [
           IconButton(
             tooltip: 'Refresh',
@@ -579,68 +599,410 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
       ),
       body: listings.when(
         data: (items) {
+          final pending = items
+              .where((e) => (e.status ?? '').toLowerCase().contains('pending'))
+              .length;
+          final draft =
+              items.where((e) => (e.status ?? '').toLowerCase() == 'draft').length;
+          final published = items
+              .where((e) => (e.status ?? '').toLowerCase() == 'published')
+              .length;
+
           if (items.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              children: [
+                _ListingsHeaderCard(
+                  canCreate: canCreate,
+                  onCreate: _openCreateDialog,
+                ),
+                const SizedBox(height: 14),
+                const _EmptyStateCard(
+                  message:
+                      'No listings yet. Create your first listing to start verification and publication workflow.',
+                ),
+              ],
+            );
+          }
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            children: [
+              _ListingsHeaderCard(
+                canCreate: canCreate,
+                onCreate: _openCreateDialog,
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 100,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
                   children: [
-                    const Text('No listings yet.'),
-                    const SizedBox(height: 12),
-                    FilledButton.icon(
-                      onPressed: canCreate ? _openCreateDialog : null,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Create Listing'),
-                    ),
+                    _MiniKpiCard(title: 'Total', value: '${items.length}'),
+                    _MiniKpiCard(title: 'Pending', value: '$pending'),
+                    _MiniKpiCard(title: 'Draft', value: '$draft'),
+                    _MiniKpiCard(title: 'Published', value: '$published'),
                   ],
                 ),
               ),
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (_, i) {
-              final l = items[i];
-              final subtitle = <String>[
-                if ((l.location ?? '').trim().isNotEmpty) l.location!.trim(),
-                if ((l.status ?? '').trim().isNotEmpty) l.status!.trim(),
-              ].join(' - ');
-
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.home_work_outlined),
-                  title: Text(l.title),
-                  subtitle: Text(subtitle.isEmpty ? '-' : subtitle),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(l.price ?? ''),
-                      const SizedBox(width: 8),
-                      if (_isBusy(l.id))
-                        const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      else
-                        PopupMenuButton<_ListingRowAction>(
-                          onSelected: (value) => _onActionSelected(value, l),
-                          itemBuilder: (_) =>
-                              _buildActionMenuItems(listing: l, me: me),
-                        ),
-                    ],
-                  ),
-                  onTap: () => context.go('/property/${l.id}', extra: l),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(_jcRadius),
+                  border: Border.all(color: _jcPanelBorder),
                 ),
-              );
-            },
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 14, 16, 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 6,
+                            child: Text(
+                              'Property',
+                              style: TextStyle(
+                                color: _jcMuted,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              'Status',
+                              style: TextStyle(
+                                color: _jcMuted,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              'Price',
+                              style: TextStyle(
+                                color: _jcMuted,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              'Date',
+                              style: TextStyle(
+                                color: _jcMuted,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 38),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ...items.map((l) {
+                      return InkWell(
+                        onTap: () => context.go('/property/${l.id}', extra: l),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 6,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        color: const Color(0xFFE2E8F0),
+                                      ),
+                                      child: const Icon(Icons.home_work_outlined),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            l.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              color: _jcHeading,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'ID: ${l.id}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: _jcMuted,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: _ListingStatusChip(status: l.status ?? '-'),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  l.price ?? '-',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: _jcHeading,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  _formatRowDate(l),
+                                  style: const TextStyle(
+                                    color: _jcMuted,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              if (_isBusy(l.id))
+                                const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              else
+                                PopupMenuButton<_ListingRowAction>(
+                                  onSelected: (value) => _onActionSelected(value, l),
+                                  itemBuilder: (_) =>
+                                      _buildActionMenuItems(listing: l, me: me),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Failed: $e')),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Failed to load listings: $e'),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatRowDate(Listing listing) {
+    if (listing.createdAt != null) {
+      final d = listing.createdAt!.toLocal();
+      return '${_monthShort(d.month)} ${d.day}, ${d.year}';
+    }
+    final raw = (listing.date ?? '').trim();
+    if (raw.isNotEmpty) return raw;
+    return '-';
+  }
+
+  String _monthShort(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return months[(month - 1).clamp(0, 11)];
+  }
+}
+
+class _ListingsHeaderCard extends StatelessWidget {
+  const _ListingsHeaderCard({
+    required this.canCreate,
+    required this.onCreate,
+  });
+
+  final bool canCreate;
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_jcRadius),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Recent Listings',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: _jcHeading,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Create, edit, and manage listings with verification workflow actions.',
+                  style: TextStyle(fontSize: 16, color: _jcMuted),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: canCreate ? onCreate : null,
+            icon: const Icon(Icons.add),
+            label: const Text('Create New Listing'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniKpiCard extends StatelessWidget {
+  const _MiniKpiCard({required this.title, required this.value});
+
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 182,
+      margin: const EdgeInsets.only(right: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_jcRadius),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 14, color: _jcMuted),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ListingStatusChip extends StatelessWidget {
+  const _ListingStatusChip({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = status.toLowerCase();
+    Color bg = const Color(0xFFE2E8F0);
+    Color fg = const Color(0xFF475569);
+
+    if (s.contains('pending')) {
+      bg = const Color(0xFFFEF3C7);
+      fg = const Color(0xFFB45309);
+    } else if (s.contains('published')) {
+      bg = const Color(0xFFDCFCE7);
+      fg = const Color(0xFF15803D);
+    } else if (s == 'draft') {
+      bg = const Color(0xFFE2E8F0);
+      fg = const Color(0xFF475569);
+    } else if (s == 'archived') {
+      bg = const Color(0xFFE2E8F0);
+      fg = const Color(0xFF334155);
+    } else if (s == 'sold' || s == 'rented') {
+      bg = const Color(0xFFDBEAFE);
+      fg = const Color(0xFF1D4ED8);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border.all(color: bg.withValues(alpha: 0.9)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        status,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: fg,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyStateCard extends StatelessWidget {
+  const _EmptyStateCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(color: Color(0xFF64748B)),
       ),
     );
   }

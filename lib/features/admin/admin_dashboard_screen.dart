@@ -9,6 +9,11 @@ import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
 import '../../state/me_provider.dart';
 
+const _jcPageBg = Color(0xFFF4F7FB);
+const _jcPanelBorder = Color(0xFFE2E8F0);
+const _jcHeading = Color(0xFF0F172A);
+const _jcMuted = Color(0xFF64748B);
+
 final adminDashboardProvider =
     FutureProvider<Map<String, dynamic>>((ref) async {
   final repo = ref.watch(adminRepositoryProvider);
@@ -64,19 +69,22 @@ class AdminDashboardScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 5,
       child: Scaffold(
+        backgroundColor: _jcPageBg,
         appBar: AppBar(
-          title: const Text('Admin Dashboard'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Overview'),
-              Tab(text: 'Verifications'),
-              Tab(text: 'Flagged'),
-              Tab(text: 'Hiring'),
-              Tab(text: 'Ops'),
-            ],
+          backgroundColor: _jcPageBg,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          title: const Text(
+            'Admin Console',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 30,
+              color: _jcHeading,
+            ),
           ),
           actions: [
             IconButton(
+              tooltip: 'Refresh',
               icon: const Icon(Icons.refresh),
               onPressed: () {
                 ref.invalidate(adminDashboardProvider);
@@ -88,13 +96,46 @@ class AdminDashboardScreen extends ConsumerWidget {
             ),
           ],
         ),
-        body: TabBarView(
+        body: Column(
           children: [
-            _OverviewTab(dashboardAsync: dashboardAsync),
-            _VerificationsTab(dashboardAsync: dashboardAsync),
-            _FlaggedTab(dashboardAsync: dashboardAsync),
-            _HiringTab(),
-            const _OpsTab(),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: _AdminHeaderBlock(),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _jcPanelBorder),
+                ),
+                child: const TabBar(
+                  padding: EdgeInsets.all(4),
+                  labelColor: Color(0xFF0F172A),
+                  unselectedLabelColor: Color(0xFF64748B),
+                  indicatorColor: Color(0xFF2563EB),
+                  tabs: [
+                    Tab(text: 'Overview'),
+                    Tab(text: 'Verifications'),
+                    Tab(text: 'Flagged'),
+                    Tab(text: 'Hiring'),
+                    Tab(text: 'Ops'),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _OverviewTab(dashboardAsync: dashboardAsync),
+                  _VerificationsTab(dashboardAsync: dashboardAsync),
+                  _FlaggedTab(dashboardAsync: dashboardAsync),
+                  _HiringTab(),
+                  const _OpsTab(),
+                ],
+              ),
+            ),
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
@@ -207,7 +248,7 @@ class _OverviewTab extends StatelessWidget {
             overview['revenueJanLabel'] ?? overview['revenue_jan_label'] ?? '';
 
         return ListView(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
             Wrap(
               spacing: 12,
@@ -227,9 +268,9 @@ class _OverviewTab extends StatelessWidget {
             Text('Raw (debug)', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 6),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).dividerColor),
+                border: Border.all(color: _jcPanelBorder),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(const JsonEncoder.withIndent('  ').convert(data)),
@@ -261,7 +302,7 @@ class _VerificationsTab extends ConsumerWidget {
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           itemCount: list.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, i) {
@@ -387,7 +428,7 @@ class _FlaggedTab extends ConsumerWidget {
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           itemCount: list.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, i) {
@@ -548,6 +589,7 @@ class _AddCommentBoxState extends ConsumerState<_AddCommentBox> {
               onPressed: _saving
                   ? null
                   : () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       final comment = _comment.text.trim();
                       final tag = _tag.text.trim();
                       if (comment.isEmpty || tag.isEmpty) return;
@@ -564,15 +606,13 @@ class _AddCommentBoxState extends ConsumerState<_AddCommentBox> {
                             );
                         _comment.clear();
                         ref.invalidate(adminDashboardProvider);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Comment sent')));
-                        }
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Comment sent')),
+                        );
                       } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed: $e')));
-                        }
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Failed: $e')),
+                        );
                       } finally {
                         if (mounted) setState(() => _saving = false);
                       }
@@ -1074,20 +1114,107 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: 180,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 6),
-              Text(value, style: Theme.of(context).textTheme.titleLarge),
-            ],
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: _jcMuted,
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminHeaderBlock extends StatelessWidget {
+  const _AdminHeaderBlock();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Admin Console',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: _jcHeading,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'System-wide overview and verification management.',
+                  style: TextStyle(fontSize: 16, color: _jcMuted),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'SYSTEM STATUS',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1D4ED8),
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Live',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E3A8A),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
