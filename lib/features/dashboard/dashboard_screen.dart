@@ -14,7 +14,8 @@ const _jcMuted = Color(0xFF64748B);
 final dashboardListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final me = await ref.watch(meProvider.future);
   final role = (me?.role ?? '').toLowerCase();
-  final isOperator = role == 'admin' || role == 'agent' || role == 'seller' || role == 'owner';
+  final isOperator =
+      role == 'admin' || role == 'agent' || role == 'seller' || role == 'owner';
   if (!isOperator) return const [];
 
   try {
@@ -24,7 +25,8 @@ final dashboardListingsProvider = FutureProvider<List<Listing>>((ref) async {
   }
 });
 
-final dashboardAdminOverviewProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+final dashboardAdminOverviewProvider =
+    FutureProvider<Map<String, dynamic>?>((ref) async {
   final me = await ref.watch(meProvider.future);
   if ((me?.role ?? '').toLowerCase() != 'admin') return null;
 
@@ -43,7 +45,8 @@ class DashboardScreen extends ConsumerWidget {
     final meAsync = ref.watch(meProvider);
 
     return meAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Dashboard')),
         body: Center(child: Text('Failed to load profile: $error')),
@@ -54,50 +57,29 @@ class DashboardScreen extends ConsumerWidget {
             ? me!.fullName!.trim()
             : (me?.email ?? 'User');
 
-        if (role == 'admin') {
-          return _OperatorConsole(
-            title: 'Admin Listings Console',
-            subtitle: 'Create, edit, and manage listings across all platform roles.',
-            role: role,
-            displayName: displayName,
-            isAdmin: true,
-          );
+        switch (role) {
+          case 'admin':
+            return _AdminDashboard(displayName: displayName);
+          case 'agent':
+            return _AgentDashboard(displayName: displayName);
+          case 'seller':
+            return _SellerDashboard(displayName: displayName);
+          case 'owner':
+            return _OwnerDashboard(displayName: displayName);
+          case 'renter':
+            return _RenterDashboard(displayName: displayName);
+          default:
+            return _BuyerDashboard(displayName: displayName);
         }
-
-        if (role == 'agent' || role == 'seller' || role == 'owner') {
-          return _OperatorConsole(
-            title: role == 'owner'
-                ? 'Owner Listings Console'
-                : role == 'seller'
-                    ? 'Seller Listings Console'
-                    : 'Agent Dashboard',
-            subtitle: 'Manage your listings, verification progress, and conversations.',
-            role: role,
-            displayName: displayName,
-            isAdmin: false,
-          );
-        }
-
-        return _BuyerConsole(role: role, displayName: displayName);
       },
     );
   }
 }
 
-class _OperatorConsole extends ConsumerWidget {
-  const _OperatorConsole({
-    required this.title,
-    required this.subtitle,
-    required this.role,
-    required this.displayName,
-    required this.isAdmin,
-  });
+class _AdminDashboard extends ConsumerWidget {
+  const _AdminDashboard({required this.displayName});
 
-  final String title;
-  final String subtitle;
-  final String role;
   final String displayName;
-  final bool isAdmin;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -105,17 +87,14 @@ class _OperatorConsole extends ConsumerWidget {
     final adminAsync = ref.watch(dashboardAdminOverviewProvider);
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: _jcPageBg,
         appBar: AppBar(
           backgroundColor: _jcPageBg,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
-          title: const SizedBox(
-            height: 34,
-            child: _BrandWordmark(),
-          ),
+          title: const SizedBox(height: 34, child: _BrandWordmark()),
           actions: [
             IconButton(
               tooltip: 'Refresh',
@@ -125,29 +104,26 @@ class _OperatorConsole extends ConsumerWidget {
               },
               icon: const Icon(Icons.refresh),
             ),
+            IconButton(
+              tooltip: 'Open Admin Panel',
+              onPressed: () => context.go('/admin'),
+              icon: const Icon(Icons.admin_panel_settings_outlined),
+            ),
           ],
         ),
         body: listingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Failed to load listings: $e')),
           data: (listings) {
-            final draft = listings.where((e) => (e.status ?? '').toLowerCase() == 'draft').length;
-            final pending = listings
-                .where((e) => (e.status ?? '').toLowerCase().contains('pending'))
-                .length;
-            final closed = listings.where((e) {
-              final s = (e.status ?? '').toLowerCase();
-              return s == 'sold' || s == 'rented';
-            }).length;
-
+            final stats = _listingStats(listings);
             final overview = adminAsync.maybeWhen(
               data: (data) => (data?['overview'] is Map<String, dynamic>)
                   ? data!['overview'] as Map<String, dynamic>
                   : <String, dynamic>{},
               orElse: () => <String, dynamic>{},
             );
-
-            final adminUsers = '${overview['totalUsers'] ?? overview['total_users'] ?? '-'}';
+            final adminUsers =
+                '${overview['totalUsers'] ?? overview['total_users'] ?? '-'}';
             final adminFlagged =
                 '${overview['flaggedListings'] ?? overview['flagged_listings'] ?? '-'}';
 
@@ -156,10 +132,11 @@ class _OperatorConsole extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                   child: _ConsoleHeader(
-                    title: title,
-                    subtitle: subtitle,
+                    title: 'Admin Listings Console',
+                    subtitle:
+                        'Create, edit, and moderate listings across all platform roles.',
                     displayName: displayName,
-                    role: role,
+                    role: 'admin',
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -169,12 +146,13 @@ class _OperatorConsole extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     scrollDirection: Axis.horizontal,
                     children: [
-                      _KpiCard(title: 'Total Listings', value: '${listings.length}'),
-                      _KpiCard(title: 'Pending Review', value: '$pending'),
-                      _KpiCard(title: 'Draft Listings', value: '$draft'),
-                      _KpiCard(title: 'Closed Deals', value: '$closed'),
-                      if (isAdmin) _KpiCard(title: 'Total Users', value: adminUsers),
-                      if (isAdmin) _KpiCard(title: 'Flagged', value: adminFlagged),
+                      _KpiCard(
+                          title: 'Total Listings', value: '${listings.length}'),
+                      _KpiCard(
+                          title: 'Pending Review', value: '${stats.pending}'),
+                      _KpiCard(title: 'Closed Deals', value: '${stats.closed}'),
+                      _KpiCard(title: 'Total Users', value: adminUsers),
+                      _KpiCard(title: 'Flagged Listings', value: adminFlagged),
                     ],
                   ),
                 ),
@@ -193,8 +171,9 @@ class _OperatorConsole extends ConsumerWidget {
                       indicatorColor: Color(0xFF2563EB),
                       tabs: [
                         Tab(text: 'Listings'),
+                        Tab(text: 'Verifications'),
                         Tab(text: 'Chats'),
-                        Tab(text: 'Pending Verifications'),
+                        Tab(text: 'Admin Ops'),
                       ],
                     ),
                   ),
@@ -204,7 +183,121 @@ class _OperatorConsole extends ConsumerWidget {
                   child: TabBarView(
                     children: [
                       _ListingsPane(listings: listings),
-                      _ChatsPane(isAdmin: isAdmin),
+                      _VerificationPane(listings: listings),
+                      const _ChatsPane(isAdmin: true),
+                      const _AdminOpsPane(),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _AgentDashboard extends ConsumerWidget {
+  const _AgentDashboard({required this.displayName});
+
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listingsAsync = ref.watch(dashboardListingsProvider);
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: _jcPageBg,
+        appBar: AppBar(
+          backgroundColor: _jcPageBg,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          title: const SizedBox(height: 34, child: _BrandWordmark()),
+          actions: [
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: () => ref.invalidate(dashboardListingsProvider),
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        body: listingsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Failed to load listings: $e')),
+          data: (listings) {
+            final stats = _listingStats(listings);
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: _ConsoleHeader(
+                    title: 'Agent Dashboard',
+                    subtitle:
+                        'Manage listings, convert leads, and track verification progress.',
+                    displayName: displayName,
+                    role: 'agent',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 110,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _KpiCard(
+                          title: 'My Listings', value: '${listings.length}'),
+                      _KpiCard(
+                          title: 'Pending Review', value: '${stats.pending}'),
+                      _KpiCard(title: 'Published', value: '${stats.published}'),
+                      _KpiCard(title: 'Closed Deals', value: '${stats.closed}'),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.go('/listings'),
+                          icon: const Icon(Icons.add_business_outlined),
+                          label: const Text('Open Listings Console'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _jcPanelBorder),
+                    ),
+                    child: const TabBar(
+                      padding: EdgeInsets.all(4),
+                      labelColor: Color(0xFF0F172A),
+                      unselectedLabelColor: Color(0xFF64748B),
+                      indicatorColor: Color(0xFF2563EB),
+                      tabs: [
+                        Tab(text: 'Listings'),
+                        Tab(text: 'Leads'),
+                        Tab(text: 'Verification'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _ListingsPane(listings: listings),
+                      const _ChatsPane(isAdmin: false),
                       _VerificationPane(listings: listings),
                     ],
                   ),
@@ -218,13 +311,200 @@ class _OperatorConsole extends ConsumerWidget {
   }
 }
 
-class _BuyerConsole extends StatelessWidget {
-  const _BuyerConsole({
-    required this.role,
-    required this.displayName,
-  });
+class _SellerDashboard extends ConsumerWidget {
+  const _SellerDashboard({required this.displayName});
 
-  final String role;
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listingsAsync = ref.watch(dashboardListingsProvider);
+
+    return Scaffold(
+      backgroundColor: _jcPageBg,
+      appBar: AppBar(
+        backgroundColor: _jcPageBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: const SizedBox(height: 34, child: _BrandWordmark()),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () => ref.invalidate(dashboardListingsProvider),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: listingsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Failed to load listings: $e')),
+        data: (listings) {
+          final stats = _listingStats(listings);
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            children: [
+              _ConsoleHeader(
+                title: 'Seller Listings Console',
+                subtitle:
+                    'Publish inventory, track negotiations, and close buyer requests.',
+                displayName: displayName,
+                role: 'seller',
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                      child: _KpiCard(
+                          title: 'Inventory', value: '${listings.length}')),
+                  Expanded(
+                      child: _KpiCard(
+                          title: 'Pending Review', value: '${stats.pending}')),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                      child: _KpiCard(
+                          title: 'Published', value: '${stats.published}')),
+                  Expanded(
+                      child:
+                          _KpiCard(title: 'Closed', value: '${stats.closed}')),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: Icons.home_work_outlined,
+                title: 'Manage Listings',
+                subtitle:
+                    'Create, edit, duplicate, archive, and unarchive listings',
+                onTap: () => context.go('/listings'),
+              ),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: Icons.chat_bubble_outline,
+                title: 'Buyer & Support Chats',
+                subtitle:
+                    'Respond to inquiries and progress transaction actions',
+                onTap: () => context.go('/chat'),
+              ),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: Icons.shield_outlined,
+                title: 'Verification Progress',
+                subtitle:
+                    'Review pending verification checks for your listings',
+                onTap: () => context.go('/listings'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _OwnerDashboard extends ConsumerWidget {
+  const _OwnerDashboard({required this.displayName});
+
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listingsAsync = ref.watch(dashboardListingsProvider);
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: _jcPageBg,
+        appBar: AppBar(
+          backgroundColor: _jcPageBg,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          title: const SizedBox(height: 34, child: _BrandWordmark()),
+          actions: [
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: () => ref.invalidate(dashboardListingsProvider),
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        body: listingsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Failed to load listings: $e')),
+          data: (listings) {
+            final stats = _listingStats(listings);
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: _ConsoleHeader(
+                    title: 'Owner Console',
+                    subtitle:
+                        'Track property performance, costs, and tenant/buyer requests.',
+                    displayName: displayName,
+                    role: 'owner',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 110,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _KpiCard(
+                          title: 'Properties', value: '${listings.length}'),
+                      _KpiCard(title: 'Active', value: '${stats.published}'),
+                      _KpiCard(title: 'Pending', value: '${stats.pending}'),
+                      _KpiCard(title: 'Closed', value: '${stats.closed}'),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _jcPanelBorder),
+                    ),
+                    child: const TabBar(
+                      padding: EdgeInsets.all(4),
+                      labelColor: Color(0xFF0F172A),
+                      unselectedLabelColor: Color(0xFF64748B),
+                      indicatorColor: Color(0xFF2563EB),
+                      tabs: [
+                        Tab(text: 'Properties'),
+                        Tab(text: 'Verification'),
+                        Tab(text: 'Conversations'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _ListingsPane(listings: listings),
+                      _VerificationPane(listings: listings),
+                      const _ChatsPane(isAdmin: false),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _BuyerDashboard extends StatelessWidget {
+  const _BuyerDashboard({required this.displayName});
+
   final String displayName;
 
   @override
@@ -241,24 +521,32 @@ class _BuyerConsole extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         children: [
           _ConsoleHeader(
-            title: 'My Justice City',
-            subtitle: 'Saved properties, tours, inquiries, and support workflow.',
+            title: 'Buyer Dashboard',
+            subtitle:
+                'Browse properties, schedule tours, and manage ongoing inquiries.',
             displayName: displayName,
-            role: role,
+            role: 'buyer',
           ),
           const SizedBox(height: 14),
+          _ActionTile(
+            icon: Icons.search_outlined,
+            title: 'Browse Listings',
+            subtitle: 'Open marketplace inventory and property details',
+            onTap: () => context.go('/listings'),
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.calendar_month_outlined,
+            title: 'Schedule Tour',
+            subtitle: 'Book a property visit with support',
+            onTap: () => context.go('/schedule-tour'),
+          ),
+          const SizedBox(height: 10),
           _ActionTile(
             icon: Icons.phone_forwarded_outlined,
             title: 'Request Callback',
             subtitle: 'Contact support about a listing',
             onTap: () => context.go('/request-callback'),
-          ),
-          const SizedBox(height: 10),
-          _ActionTile(
-            icon: Icons.work_outline,
-            title: 'Professional Services',
-            subtitle: 'Survey, valuation, land verification, snagging',
-            onTap: () => context.go('/services'),
           ),
           const SizedBox(height: 10),
           _ActionTile(
@@ -271,6 +559,133 @@ class _BuyerConsole extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RenterDashboard extends StatelessWidget {
+  const _RenterDashboard({required this.displayName});
+
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _jcPageBg,
+      appBar: AppBar(
+        backgroundColor: _jcPageBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: const SizedBox(height: 34, child: _BrandWordmark()),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        children: [
+          _ConsoleHeader(
+            title: 'Renter Dashboard',
+            subtitle:
+                'Track rental conversations, utility requests, and support tasks.',
+            displayName: displayName,
+            role: 'renter',
+          ),
+          const SizedBox(height: 14),
+          _ActionTile(
+            icon: Icons.home_work_outlined,
+            title: 'Rental Listings',
+            subtitle: 'Open available properties and compare rent options',
+            onTap: () => context.go('/listings'),
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.work_outline,
+            title: 'Professional Services',
+            subtitle: 'Survey, valuation, verification, and snagging support',
+            onTap: () => context.go('/services'),
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.chat_bubble_outline,
+            title: 'Support Conversations',
+            subtitle: 'Manage current chats with agents and support',
+            onTap: () => context.go('/chat'),
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.person_outline,
+            title: 'Profile & Verification',
+            subtitle: 'Update account profile and verification details',
+            onTap: () => context.go('/profile'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminOpsPane extends StatelessWidget {
+  const _AdminOpsPane();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      children: [
+        _ActionTile(
+          icon: Icons.gavel_outlined,
+          title: 'Open Disputes Queue',
+          subtitle: 'Review and resolve disputes from transactions and support',
+          onTap: () => context.go('/admin'),
+        ),
+        const SizedBox(height: 10),
+        _ActionTile(
+          icon: Icons.upload_file_outlined,
+          title: 'Service PDF Jobs',
+          subtitle: 'Monitor and manually process pending transcript/PDF jobs',
+          onTap: () => context.go('/admin'),
+        ),
+        const SizedBox(height: 10),
+        _ActionTile(
+          icon: Icons.shield_outlined,
+          title: 'Moderation Actions',
+          subtitle: 'Resolve flagged listings and verification escalations',
+          onTap: () => context.go('/admin'),
+        ),
+      ],
+    );
+  }
+}
+
+_ListingStats _listingStats(List<Listing> listings) {
+  final draft =
+      listings.where((e) => (e.status ?? '').toLowerCase() == 'draft').length;
+  final pending = listings
+      .where((e) => (e.status ?? '').toLowerCase().contains('pending'))
+      .length;
+  final published = listings
+      .where((e) => (e.status ?? '').toLowerCase().contains('published'))
+      .length;
+  final closed = listings.where((e) {
+    final s = (e.status ?? '').toLowerCase();
+    return s == 'sold' || s == 'rented';
+  }).length;
+  return _ListingStats(
+    draft: draft,
+    pending: pending,
+    published: published,
+    closed: closed,
+  );
+}
+
+class _ListingStats {
+  const _ListingStats({
+    required this.draft,
+    required this.pending,
+    required this.published,
+    required this.closed,
+  });
+
+  final int draft;
+  final int pending;
+  final int published;
+  final int closed;
 }
 
 class _ConsoleHeader extends StatelessWidget {
@@ -425,7 +840,9 @@ class _ListingsPane extends StatelessWidget {
         if (listings.isEmpty)
           const _EmptyState(message: 'No listings yet.')
         else
-          ...listings.take(6).map((listing) => _ListingPreviewTile(listing: listing)),
+          ...listings
+              .take(6)
+              .map((listing) => _ListingPreviewTile(listing: listing)),
       ],
     );
   }
@@ -498,7 +915,8 @@ class _VerificationPane extends StatelessWidget {
               icon: Icons.shield_outlined,
               title: listing.title,
               subtitle: '${listing.location ?? '-'} - ${listing.status ?? '-'}',
-              onTap: () => context.go('/property/${listing.id}', extra: listing),
+              onTap: () =>
+                  context.go('/property/${listing.id}', extra: listing),
             ),
           ),
       ],
