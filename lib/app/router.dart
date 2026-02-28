@@ -27,6 +27,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: ref.watch(routerRefreshProvider),
     redirect: (context, state) {
       final session = ref.read(sessionProvider);
+      final me = ref.read(meProvider);
+      final isAdminUser = me.maybeWhen(
+        data: (u) => (u?.role ?? '').trim().toLowerCase() == 'admin',
+        orElse: () => false,
+      );
 
       final loc = state.matchedLocation;
       final isWelcomeRoute = loc == '/welcome';
@@ -52,15 +57,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Auth gate
       if (!signedIn && !isAuthRoute && !isPublicAuthRoute) return '/welcome';
       if (signedIn && isAuthRoute) {
-        return '/home';
+        return isAdminUser ? '/admin' : '/home';
       }
 
       // Admin gate
       if (signedIn && isAdminRoute) {
-        final isAdmin = ref.read(isAdminProvider);
-        if (!isAdmin) {
+        if (!isAdminUser) {
           // If role still loading, allow screen to handle; otherwise redirect.
-          final me = ref.read(meProvider);
           return me.maybeWhen(
             data: (_) => '/home',
             orElse: () => null,
@@ -84,6 +87,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Trust gate (verification) - only enforce once we have a resolved status.
       if (signedIn && !isAuthRoute) {
+        if (isAdminUser) {
+          return isVerifyRoute ? '/admin' : null;
+        }
+
         final verification = ref.read(verificationStatusProvider);
 
         final isPublicRoute = isPublicAuthRoute || isVerifyRoute;
