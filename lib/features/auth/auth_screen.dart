@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../env.dart';
 import '../../state/repositories_providers.dart';
 
 const _authPageBg = Color(0xFFF4F7FB);
@@ -20,8 +22,9 @@ String _formatAuthError(Object error) {
     if (normalized.contains('supabase.co')) {
       return 'Unable to reach the secure sign-in service right now. Check your internet connection or emulator DNS, then try again.';
     }
-    if (normalized.contains('justicecityltd.com')) {
-      return 'Unable to reach the Justice City app server right now. Check your internet connection or emulator DNS, then try again.';
+    if (normalized.contains('justicecityltd.com') ||
+        normalized.contains('justice-city.onrender.com')) {
+      return 'Unable to reach the Justice City app server right now. Check your internet connection, then try again.';
     }
     return 'Unable to reach Justice City services right now. Check your internet connection and try again.';
   }
@@ -63,7 +66,12 @@ InputDecoration _authInputDecoration(String label) {
 }
 
 class AuthScreen extends ConsumerStatefulWidget {
-  const AuthScreen({super.key});
+  const AuthScreen({
+    super.key,
+    this.showServiceStatusBanner = true,
+  });
+
+  final bool showServiceStatusBanner;
 
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
@@ -126,6 +134,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return _AuthShell(
       title: 'Create an account',
       subtitle: 'Welcome to Justice City. Sign up to begin verification and access your dashboard.',
+      showServiceStatusBanner: widget.showServiceStatusBanner,
       child: _AuthCard(
         title: 'Sign up',
         error: _error,
@@ -214,7 +223,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 }
 
 class SignInScreen extends ConsumerStatefulWidget {
-  const SignInScreen({super.key});
+  const SignInScreen({
+    super.key,
+    this.showServiceStatusBanner = true,
+  });
+
+  final bool showServiceStatusBanner;
 
   @override
   ConsumerState<SignInScreen> createState() => _SignInScreenState();
@@ -255,6 +269,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     return _AuthShell(
       title: 'Welcome back',
       subtitle: 'Sign in to continue to your verification and dashboard workspace.',
+      showServiceStatusBanner: widget.showServiceStatusBanner,
       child: _AuthCard(
         title: 'Sign in',
         error: _error,
@@ -304,11 +319,13 @@ class _AuthShell extends StatelessWidget {
   const _AuthShell({
     required this.title,
     required this.subtitle,
+    required this.showServiceStatusBanner,
     required this.child,
   });
 
   final String title;
   final String subtitle;
+  final bool showServiceStatusBanner;
   final Widget child;
 
   @override
@@ -326,6 +343,10 @@ class _AuthShell extends StatelessWidget {
                 children: [
                   const _BrandHeader(),
                   const SizedBox(height: 18),
+                  if (showServiceStatusBanner) ...[
+                    const _ServiceStatusBanner(),
+                    const SizedBox(height: 12),
+                  ],
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -408,6 +429,254 @@ class _AuthShell extends StatelessWidget {
   }
 }
 
+
+class _ServiceStatusBanner extends StatefulWidget {
+  const _ServiceStatusBanner();
+
+  @override
+  State<_ServiceStatusBanner> createState() => _ServiceStatusBannerState();
+}
+
+class _ServiceStatusBannerState extends State<_ServiceStatusBanner> {
+  late Future<_ServiceStatus> _statusFuture;
+  final CancelToken _cancelToken = CancelToken();
+
+  @override
+  void initState() {
+    super.initState();
+    _statusFuture = _loadStatus();
+  }
+
+  @override
+  void dispose() {
+    _cancelToken.cancel('Auth service banner disposed');
+    super.dispose();
+  }
+
+  Future<_ServiceStatus> _loadStatus() async {
+    final supabaseClient = Dio(
+      BaseOptions(
+        baseUrl: Env.supabaseUrl,
+        connectTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 8),
+        headers: {
+          'apikey': Env.supabaseAnonKey,
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    final backendClient = Dio(
+      BaseOptions(
+        baseUrl: Env.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 8),
+      ),
+    );
+
+    var supabaseOk = false;
+    var backendOk = false;
+    var backendFallbackActive = false;
+
+    try {
+      final response = await supabaseClient.get(
+        '/auth/v1/settings',
+        cancelToken: _cancelToken,
+      );
+      supabaseOk = response.statusCode != null && response.statusCode! < 500;
+    } on DioException {
+      supabaseOk = false;
+    }
+
+    try {
+      final response = await backendClient.get(
+        '/api/service-offerings',
+        cancelToken: _cancelToken,
+      );
+      backendOk = response.statusCode == 200;
+    } on DioException {
+      final fallbackUri = Env.apiFallbackUri;
+      if (fallbackUri != null) {
+        final fallbackClient = Dio(
+          BaseOptions(
+            baseUrl: '${fallbackUri.scheme}://${fallbackUri.authority}',
+            connectTimeout: const Duration(seconds: 8),
+            receiveTimeout: const Duration(seconds: 8),
+          ),
+        );
+        try {
+          final fallbackResponse = await fallbackClient.get(
+            '/api/service-offerings',
+            cancelToken: _cancelToken,
+          );
+          backendOk = fallbackResponse.statusCode == 200;
+          backendFallbackActive = backendOk;
+        } on DioException {
+          backendOk = false;
+        }
+      }
+    }
+
+    return _ServiceStatus(
+      supabaseOk: supabaseOk,
+      backendOk: backendOk,
+      backendFallbackActive: backendFallbackActive,
+    );
+  }
+
+  void _retry() {
+    setState(() {
+      _statusFuture = _loadStatus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_ServiceStatus>(
+      future: _statusFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _StatusPanel(
+            color: Color(0xFFE0F2FE),
+            borderColor: Color(0xFFBAE6FD),
+            title: 'Checking service availability',
+            message: 'Testing secure sign-in and app server connectivity.',
+            trailing: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+
+        final status = snapshot.data;
+        if (status == null) {
+          return _StatusPanel(
+            color: const Color(0xFFFEF2F2),
+            borderColor: const Color(0xFFFECACA),
+            title: 'Service check unavailable',
+            message: 'Unable to determine connectivity right now.',
+            trailing: TextButton(
+              onPressed: _retry,
+              child: const Text('Retry'),
+            ),
+          );
+        }
+
+        if (status.supabaseOk && status.backendOk && !status.backendFallbackActive) {
+          return _StatusPanel(
+            color: const Color(0xFFECFDF5),
+            borderColor: const Color(0xFFA7F3D0),
+            title: 'All services are online',
+            message: 'Secure sign-in and the Justice City app server are reachable.',
+            trailing: TextButton(
+              onPressed: _retry,
+              child: const Text('Refresh'),
+            ),
+          );
+        }
+
+        if (status.supabaseOk && status.backendOk && status.backendFallbackActive) {
+          return _StatusPanel(
+            color: const Color(0xFFFFFBEB),
+            borderColor: const Color(0xFFFDE68A),
+            title: 'Backup app server active',
+            message: 'Secure sign-in is online. The app server is reachable through the backup connection.',
+            trailing: TextButton(
+              onPressed: _retry,
+              child: const Text('Refresh'),
+            ),
+          );
+        }
+
+        final issues = <String>[
+          if (!status.supabaseOk) 'Secure sign-in service is unavailable.',
+          if (!status.backendOk) 'Justice City app server is unavailable.',
+        ];
+
+        return _StatusPanel(
+          color: const Color(0xFFFEF2F2),
+          borderColor: const Color(0xFFFECACA),
+          title: 'Service issue detected',
+          message: issues.join(' '),
+          trailing: TextButton(
+            onPressed: _retry,
+            child: const Text('Retry'),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ServiceStatus {
+  const _ServiceStatus({
+    required this.supabaseOk,
+    required this.backendOk,
+    required this.backendFallbackActive,
+  });
+
+  final bool supabaseOk;
+  final bool backendOk;
+  final bool backendFallbackActive;
+}
+
+class _StatusPanel extends StatelessWidget {
+  const _StatusPanel({
+    required this.color,
+    required this.borderColor,
+    required this.title,
+    required this.message,
+    required this.trailing,
+  });
+
+  final Color color;
+  final Color borderColor;
+  final String title;
+  final String message;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: _authHeading,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: _authMuted,
+                        height: 1.4,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          trailing,
+        ],
+      ),
+    );
+  }
+}
 class _BrandHeader extends StatelessWidget {
   const _BrandHeader();
 
@@ -521,3 +790,4 @@ class _AuthHeroPill extends StatelessWidget {
     );
   }
 }
+
