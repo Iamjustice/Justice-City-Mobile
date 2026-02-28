@@ -163,6 +163,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+              _ParityMetricStrip(
+                items: [
+                  _ParityMetricItem(
+                    label: 'Role',
+                    value: capitalRole,
+                  ),
+                  _ParityMetricItem(
+                    label: 'Status',
+                    value: me.isVerified == true ? 'Verified' : 'Pending',
+                  ),
+                  _ParityMetricItem(
+                    label: 'Contact',
+                    value: (me.email ?? '-').trim().isEmpty ? '-' : me.email!,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               _PanelCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,39 +293,51 @@ class _RequestCallbackScreenState extends ConsumerState<RequestCallbackScreen> {
     return _ParityScaffold(
       title: 'Request Callback',
       subtitle: 'Ask support to call you and continue the request in chat.',
-      body: _PanelCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              decoration: _fieldDecoration(
-                'Phone (E.164)',
-                hint: '+2349012345678',
-              ),
+      body: Column(
+        children: [
+          const _PanelCard(
+            child: _SupportFlowBanner(
+              title: 'Support callback workflow',
+              subtitle:
+                  'Your request is converted into a tracked support conversation so the team can follow up and keep a record.',
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _notes,
-              minLines: 3,
-              maxLines: 5,
-              decoration: _fieldDecoration('Notes'),
+          ),
+          const SizedBox(height: 12),
+          _PanelCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  decoration: _fieldDecoration(
+                    'Phone (E.164)',
+                    hint: '+2349012345678',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _notes,
+                  minLines: 3,
+                  maxLines: 5,
+                  decoration: _fieldDecoration('Notes'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: _sending ? null : _submit,
+                  icon: _sending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.phone_forwarded_outlined),
+                  label: const Text('Send callback request'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _sending ? null : _submit,
-              icon: _sending
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.phone_forwarded_outlined),
-              label: const Text('Send callback request'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -386,71 +415,83 @@ class _ScheduleTourScreenState extends ConsumerState<ScheduleTourScreen> {
       title: 'Schedule Tour',
       subtitle:
           'Book a property inspection and route details into support chat.',
-      body: _PanelCard(
-        child: Column(
-          children: [
-            TextField(
-              controller: _propertyRef,
-              decoration: _fieldDecoration('Property reference (optional)'),
+      body: Column(
+        children: [
+          const _PanelCard(
+            child: _SupportFlowBanner(
+              title: 'Tour scheduling workflow',
+              subtitle:
+                  'Choose a date and time. The request is sent into support chat so the visit can be coordinated and tracked.',
             ),
-            const SizedBox(height: 10),
-            Row(
+          ),
+          const SizedBox(height: 12),
+          _PanelCard(
+            child: Column(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 180)),
-                      );
-                      if (picked != null) {
-                        setState(() => _date = picked);
-                      }
-                    },
-                    icon: const Icon(Icons.calendar_today),
-                    label: Text(selectedDate),
-                  ),
+                TextField(
+                  controller: _propertyRef,
+                  decoration: _fieldDecoration('Property reference (optional)'),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-                      if (picked != null) {
-                        setState(() => _time = picked);
-                      }
-                    },
-                    icon: const Icon(Icons.schedule),
-                    label: Text(selectedTime),
-                  ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 180)),
+                          );
+                          if (picked != null) {
+                            setState(() => _date = picked);
+                          }
+                        },
+                        icon: const Icon(Icons.calendar_today),
+                        label: Text(selectedDate),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (picked != null) {
+                            setState(() => _time = picked);
+                          }
+                        },
+                        icon: const Icon(Icons.schedule),
+                        label: Text(selectedTime),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _notes,
+                  minLines: 3,
+                  maxLines: 5,
+                  decoration: _fieldDecoration('Notes'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: _sending ? null : _submit,
+                  icon: _sending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.event_available_outlined),
+                  label: const Text('Send tour request'),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _notes,
-              minLines: 3,
-              maxLines: 5,
-              decoration: _fieldDecoration('Notes'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _sending ? null : _submit,
-              icon: _sending
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.event_available_outlined),
-              label: const Text('Send tour request'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -552,13 +593,23 @@ class _HiringScreenState extends ConsumerState<HiringScreen> {
     return _ParityScaffold(
       title: 'Hiring Application',
       subtitle: 'Professional partner onboarding for field service delivery.',
-      body: _PanelCard(
-        child: Column(
-          children: [
-            TextField(
-              controller: _fullName,
-              decoration: _fieldDecoration('Full name'),
+      body: Column(
+        children: [
+          const _PanelCard(
+            child: _SupportFlowBanner(
+              title: 'Professional onboarding',
+              subtitle:
+                  'Submit your field credentials and service track so the Justice City team can review your suitability for partner work.',
             ),
+          ),
+          const SizedBox(height: 12),
+          _PanelCard(
+            child: Column(
+              children: [
+                TextField(
+                  controller: _fullName,
+                  decoration: _fieldDecoration('Full name'),
+                ),
             const SizedBox(height: 10),
             TextField(
               controller: _email,
@@ -619,26 +670,28 @@ class _HiringScreenState extends ConsumerState<HiringScreen> {
               decoration: _fieldDecoration('Professional summary'),
             ),
             const SizedBox(height: 10),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('I consent to compliance checks'),
-              value: _consented,
-              onChanged: (v) => setState(() => _consented = v == true),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('I consent to compliance checks'),
+                  value: _consented,
+                  onChanged: (v) => setState(() => _consented = v == true),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: _submitting ? null : _submit,
+                  icon: _submitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send_outlined),
+                  label: const Text('Submit application'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _submitting ? null : _submit,
-              icon: _submitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.send_outlined),
-              label: const Text('Submit application'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -784,6 +837,30 @@ class _PolicyScaffold extends StatelessWidget {
           'Policy reference for Justice City platform usage and compliance.',
       body: Column(
         children: [
+          const _PanelCard(
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ParityMetric(
+                    item: _ParityMetricItem(label: 'Type', value: 'Compliance'),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: _ParityMetric(
+                    item: _ParityMetricItem(label: 'Scope', value: 'Platform-wide'),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: _ParityMetric(
+                    item: _ParityMetricItem(label: 'Status', value: 'Active'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
           for (final paragraph in paragraphs) ...[
             _PanelCard(
               child: Text(
@@ -825,29 +902,7 @@ class _ParityScaffold extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         children: [
-          _PanelCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: _jcHeading,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: _jcMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _ParityHeroCard(title: title, subtitle: subtitle),
           const SizedBox(height: 12),
           body,
         ],
@@ -868,10 +923,127 @@ class _PanelCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _jcPanelBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
       child: child,
+    );
+  }
+}
+
+class _ParityHeroCard extends StatelessWidget {
+  const _ParityHeroCard({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x220F172A),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.dashboard_customize_outlined,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.45,
+              color: Color(0xFFCBD5E1),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _HeroPill(label: 'Trust-first flow'),
+              _HeroPill(label: 'Role-aware access'),
+              _HeroPill(label: 'Recorded activity'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroPill extends StatelessWidget {
+  const _HeroPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFFE2E8F0),
+        ),
+      ),
     );
   }
 }
@@ -911,15 +1083,115 @@ InputDecoration _fieldDecoration(String label, {String? hint}) {
     hintText: hint,
     filled: true,
     fillColor: const Color(0xFFF8FAFC),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     border: const OutlineInputBorder(
-      borderRadius: BorderRadius.all(Radius.circular(10)),
+      borderRadius: BorderRadius.all(Radius.circular(14)),
     ),
     enabledBorder: const OutlineInputBorder(
       borderSide: BorderSide(color: _jcPanelBorder),
-      borderRadius: BorderRadius.all(Radius.circular(10)),
+      borderRadius: BorderRadius.all(Radius.circular(14)),
+    ),
+    focusedBorder: const OutlineInputBorder(
+      borderSide: BorderSide(color: Color(0xFF2563EB), width: 1.4),
+      borderRadius: BorderRadius.all(Radius.circular(14)),
     ),
     labelStyle: const TextStyle(color: _jcMuted),
   );
+}
+
+class _SupportFlowBanner extends StatelessWidget {
+  const _SupportFlowBanner({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: _jcHeading,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            color: _jcMuted,
+            height: 1.45,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ParityMetricStrip extends StatelessWidget {
+  const _ParityMetricStrip({required this.items});
+
+  final List<_ParityMetricItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          Expanded(child: _ParityMetric(item: items[i])),
+          if (i != items.length - 1) const SizedBox(width: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _ParityMetricItem {
+  const _ParityMetricItem({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+}
+
+class _ParityMetric extends StatelessWidget {
+  const _ParityMetric({required this.item});
+
+  final _ParityMetricItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return _PanelCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            item.label,
+            style: const TextStyle(fontSize: 12, color: _jcMuted),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            item.value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: _jcHeading,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _BrandWordmark extends StatelessWidget {
