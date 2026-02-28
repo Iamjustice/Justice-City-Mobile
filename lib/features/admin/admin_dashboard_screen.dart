@@ -8,8 +8,8 @@ import '../../data/repositories/services_repository.dart';
 import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
 import '../../state/me_provider.dart';
+import '../shell/justice_city_shell.dart';
 
-const _jcPageBg = Color(0xFFF4F7FB);
 const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
@@ -56,17 +56,9 @@ class AdminDashboardScreen extends ConsumerWidget {
     final isAdmin = ref.watch(isAdminProvider);
 
     if (!isAdmin) {
-      return Scaffold(
-        backgroundColor: _jcPageBg,
-        appBar: AppBar(
-          backgroundColor: _jcPageBg,
-          surfaceTintColor: Colors.transparent,
-          title: const SizedBox(
-            height: 32,
-            child: _BrandWordmark(),
-          ),
-        ),
-        body: const Center(
+      return const JusticeCityShell(
+        currentPath: '/admin',
+        child: Center(
           child: _PanelCard(
             child: Text('You do not have admin access.'),
           ),
@@ -78,31 +70,27 @@ class AdminDashboardScreen extends ConsumerWidget {
 
     return DefaultTabController(
       length: 5,
-      child: Scaffold(
-        backgroundColor: _jcPageBg,
-        appBar: AppBar(
-          backgroundColor: _jcPageBg,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          title: const SizedBox(
-            height: 32,
-            child: _BrandWordmark(),
+      child: JusticeCityShell(
+        currentPath: '/admin',
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              ref.invalidate(adminDashboardProvider);
+              ref.invalidate(adminHiringProvider);
+              ref.invalidate(adminConversationsProvider);
+              ref.invalidate(adminOpenDisputesProvider);
+              ref.invalidate(adminServicePdfJobsProvider);
+            },
           ),
-          actions: [
-            IconButton(
-              tooltip: 'Refresh',
-              icon: const Icon(Icons.refresh),
-              onPressed: () {
-                ref.invalidate(adminDashboardProvider);
-                ref.invalidate(adminHiringProvider);
-                ref.invalidate(adminConversationsProvider);
-                ref.invalidate(adminOpenDisputesProvider);
-                ref.invalidate(adminServicePdfJobsProvider);
-              },
-            ),
-          ],
+        ],
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _openAdminConversations(context, ref),
+          icon: const Icon(Icons.forum),
+          label: const Text('Conversations'),
         ),
-        body: Column(
+        child: Column(
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -143,11 +131,6 @@ class AdminDashboardScreen extends ConsumerWidget {
               ),
             ),
           ],
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _openAdminConversations(context, ref),
-          icon: const Icon(Icons.forum),
-          label: const Text('Conversations'),
         ),
       ),
     );
@@ -1433,24 +1416,3 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class _BrandWordmark extends StatelessWidget {
-  const _BrandWordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/logo.png',
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => const Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'JUSTICE CITY',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: _jcHeading,
-          ),
-        ),
-      ),
-    );
-  }
-}

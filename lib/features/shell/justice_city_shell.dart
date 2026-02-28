@@ -18,16 +18,21 @@ class JusticeCityShell extends ConsumerWidget {
     required this.currentPath,
     required this.child,
     this.backgroundColor = _shellBg,
+    this.actions,
+    this.floatingActionButton,
   });
 
   final String currentPath;
   final Widget child;
   final Color backgroundColor;
+  final List<Widget>? actions;
+  final Widget? floatingActionButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: backgroundColor,
+      floatingActionButton: floatingActionButton,
       appBar: AppBar(
         toolbarHeight: 78,
         backgroundColor: Colors.white,
@@ -46,6 +51,7 @@ class JusticeCityShell extends ConsumerWidget {
           ),
         ),
         actions: [
+          ...(actions ?? const <Widget>[]),
           Builder(
             builder: (context) => IconButton(
               tooltip: 'Open menu',

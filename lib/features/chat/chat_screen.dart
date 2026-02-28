@@ -6,8 +6,8 @@ import '../../data/repositories/chat_repository.dart';
 import '../../domain/models/chat_conversation.dart';
 import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
+import '../shell/justice_city_shell.dart';
 
-const _jcPageBg = Color(0xFFF4F7FB);
 const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
@@ -44,25 +44,16 @@ class ChatScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final inbox = ref.watch(chatInboxProvider);
 
-    return Scaffold(
-      backgroundColor: _jcPageBg,
-      appBar: AppBar(
-        backgroundColor: _jcPageBg,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        title: const SizedBox(
-          height: 32,
-          child: _BrandWordmark(),
+    return JusticeCityShell(
+      currentPath: '/chat',
+      actions: [
+        IconButton(
+          tooltip: 'Refresh',
+          onPressed: () => _refresh(ref),
+          icon: const Icon(Icons.refresh),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: () => _refresh(ref),
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-      body: inbox.when(
+      ],
+      child: inbox.when(
         data: (data) => RefreshIndicator(
           onRefresh: () => _refresh(ref),
           child: ListView(
@@ -114,6 +105,8 @@ class ChatScreen extends ConsumerWidget {
                             .toList(),
                       ),
               ),
+              const SizedBox(height: 12),
+              const JusticeCityFooter(),
             ],
           ),
         ),
@@ -478,28 +471,6 @@ class _ConversationTile extends StatelessWidget {
             ),
             const Icon(Icons.chevron_right),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BrandWordmark extends StatelessWidget {
-  const _BrandWordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/logo.png',
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => const Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'JUSTICE CITY',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: _jcHeading,
-          ),
         ),
       ),
     );

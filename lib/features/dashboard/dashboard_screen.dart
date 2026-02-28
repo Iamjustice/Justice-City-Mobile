@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/listing.dart';
 import '../../state/me_provider.dart';
 import '../../state/repositories_providers.dart';
+import '../shell/justice_city_shell.dart';
 
-const _jcPageBg = Color(0xFFF4F7FB);
 const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
@@ -45,11 +45,13 @@ class DashboardScreen extends ConsumerWidget {
     final meAsync = ref.watch(meProvider);
 
     return meAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, _) => Scaffold(
-        appBar: AppBar(title: const Text('Dashboard')),
-        body: Center(child: Text('Failed to load profile: $error')),
+      loading: () => const JusticeCityShell(
+        currentPath: '/dashboard',
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => JusticeCityShell(
+        currentPath: '/dashboard',
+        child: Center(child: Text('Failed to load profile: $error')),
       ),
       data: (me) {
         final role = (me?.role ?? 'buyer').toLowerCase();
@@ -88,30 +90,24 @@ class _AdminDashboard extends ConsumerWidget {
 
     return DefaultTabController(
       length: 4,
-      child: Scaffold(
-        backgroundColor: _jcPageBg,
-        appBar: AppBar(
-          backgroundColor: _jcPageBg,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          title: const SizedBox(height: 34, child: _BrandWordmark()),
-          actions: [
-            IconButton(
-              tooltip: 'Refresh',
-              onPressed: () {
-                ref.invalidate(dashboardListingsProvider);
-                ref.invalidate(dashboardAdminOverviewProvider);
-              },
-              icon: const Icon(Icons.refresh),
-            ),
-            IconButton(
-              tooltip: 'Open Admin Panel',
-              onPressed: () => context.go('/admin'),
-              icon: const Icon(Icons.admin_panel_settings_outlined),
-            ),
-          ],
-        ),
-        body: listingsAsync.when(
+      child: JusticeCityShell(
+        currentPath: '/dashboard',
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () {
+              ref.invalidate(dashboardListingsProvider);
+              ref.invalidate(dashboardAdminOverviewProvider);
+            },
+            icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            tooltip: 'Open Admin Panel',
+            onPressed: () => context.go('/admin'),
+            icon: const Icon(Icons.admin_panel_settings_outlined),
+          ),
+        ],
+        child: listingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Failed to load listings: $e')),
           data: (listings) {
@@ -209,22 +205,16 @@ class _AgentDashboard extends ConsumerWidget {
 
     return DefaultTabController(
       length: 3,
-      child: Scaffold(
-        backgroundColor: _jcPageBg,
-        appBar: AppBar(
-          backgroundColor: _jcPageBg,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          title: const SizedBox(height: 34, child: _BrandWordmark()),
-          actions: [
-            IconButton(
-              tooltip: 'Refresh',
-              onPressed: () => ref.invalidate(dashboardListingsProvider),
-              icon: const Icon(Icons.refresh),
-            ),
-          ],
-        ),
-        body: listingsAsync.when(
+      child: JusticeCityShell(
+        currentPath: '/dashboard',
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () => ref.invalidate(dashboardListingsProvider),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+        child: listingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Failed to load listings: $e')),
           data: (listings) {
@@ -320,22 +310,16 @@ class _SellerDashboard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final listingsAsync = ref.watch(dashboardListingsProvider);
 
-    return Scaffold(
-      backgroundColor: _jcPageBg,
-      appBar: AppBar(
-        backgroundColor: _jcPageBg,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        title: const SizedBox(height: 34, child: _BrandWordmark()),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: () => ref.invalidate(dashboardListingsProvider),
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-      body: listingsAsync.when(
+    return JusticeCityShell(
+      currentPath: '/dashboard',
+      actions: [
+        IconButton(
+          tooltip: 'Refresh',
+          onPressed: () => ref.invalidate(dashboardListingsProvider),
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
+      child: listingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Failed to load listings: $e')),
         data: (listings) {
@@ -396,6 +380,8 @@ class _SellerDashboard extends ConsumerWidget {
                     'Review pending verification checks for your listings',
                 onTap: () => context.go('/listings'),
               ),
+              const SizedBox(height: 12),
+              const JusticeCityFooter(),
             ],
           );
         },
@@ -415,22 +401,16 @@ class _OwnerDashboard extends ConsumerWidget {
 
     return DefaultTabController(
       length: 3,
-      child: Scaffold(
-        backgroundColor: _jcPageBg,
-        appBar: AppBar(
-          backgroundColor: _jcPageBg,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          title: const SizedBox(height: 34, child: _BrandWordmark()),
-          actions: [
-            IconButton(
-              tooltip: 'Refresh',
-              onPressed: () => ref.invalidate(dashboardListingsProvider),
-              icon: const Icon(Icons.refresh),
-            ),
-          ],
-        ),
-        body: listingsAsync.when(
+      child: JusticeCityShell(
+        currentPath: '/dashboard',
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () => ref.invalidate(dashboardListingsProvider),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+        child: listingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Failed to load listings: $e')),
           data: (listings) {
@@ -509,15 +489,9 @@ class _BuyerDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _jcPageBg,
-      appBar: AppBar(
-        backgroundColor: _jcPageBg,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        title: const SizedBox(height: 34, child: _BrandWordmark()),
-      ),
-      body: ListView(
+    return JusticeCityShell(
+      currentPath: '/dashboard',
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         children: [
           _ConsoleHeader(
@@ -532,7 +506,7 @@ class _BuyerDashboard extends StatelessWidget {
             icon: Icons.search_outlined,
             title: 'Browse Listings',
             subtitle: 'Open marketplace inventory and property details',
-            onTap: () => context.go('/listings'),
+            onTap: () => context.go('/home'),
           ),
           const SizedBox(height: 10),
           _ActionTile(
@@ -555,6 +529,8 @@ class _BuyerDashboard extends StatelessWidget {
             subtitle: 'Continue existing support and transaction conversations',
             onTap: () => context.go('/chat'),
           ),
+          const SizedBox(height: 12),
+          const JusticeCityFooter(),
         ],
       ),
     );
@@ -568,15 +544,9 @@ class _RenterDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _jcPageBg,
-      appBar: AppBar(
-        backgroundColor: _jcPageBg,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        title: const SizedBox(height: 34, child: _BrandWordmark()),
-      ),
-      body: ListView(
+    return JusticeCityShell(
+      currentPath: '/dashboard',
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         children: [
           _ConsoleHeader(
@@ -591,7 +561,7 @@ class _RenterDashboard extends StatelessWidget {
             icon: Icons.home_work_outlined,
             title: 'Rental Listings',
             subtitle: 'Open available properties and compare rent options',
-            onTap: () => context.go('/listings'),
+            onTap: () => context.go('/home'),
           ),
           const SizedBox(height: 10),
           _ActionTile(
@@ -614,6 +584,8 @@ class _RenterDashboard extends StatelessWidget {
             subtitle: 'Update account profile and verification details',
             onTap: () => context.go('/profile'),
           ),
+          const SizedBox(height: 12),
+          const JusticeCityFooter(),
         ],
       ),
     );
@@ -1104,25 +1076,6 @@ class _EmptyState extends StatelessWidget {
       child: Text(
         message,
         style: const TextStyle(color: Color(0xFF64748B)),
-      ),
-    );
-  }
-}
-
-class _BrandWordmark extends StatelessWidget {
-  const _BrandWordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/logo.png',
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => const Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'JUSTICE CITY',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
       ),
     );
   }

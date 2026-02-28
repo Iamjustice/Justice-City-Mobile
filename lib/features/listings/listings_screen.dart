@@ -10,6 +10,7 @@ import '../../state/me_provider.dart';
 import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
 import '../../data/repositories/listings_repository.dart';
+import '../shell/justice_city_shell.dart';
 
 final listingsProvider = FutureProvider<List<Listing>>((ref) async {
   final session = ref.watch(sessionProvider);
@@ -26,7 +27,6 @@ final listingsProvider = FutureProvider<List<Listing>>((ref) async {
   return ref.read(listingsRepositoryProvider).fetchAgentListings(actor: actor);
 });
 
-const _jcPageBg = Color(0xFFF4F7FB);
 const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
@@ -570,30 +570,21 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
     final me = ref.watch(meProvider).valueOrNull;
     final canCreate = _isOperatorRole(me);
 
-    return Scaffold(
-      backgroundColor: _jcPageBg,
-      appBar: AppBar(
-        backgroundColor: _jcPageBg,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        title: const SizedBox(
-          height: 32,
-          child: _BrandWordmark(),
+    return JusticeCityShell(
+      currentPath: '/listings',
+      actions: [
+        IconButton(
+          tooltip: 'Refresh',
+          icon: const Icon(Icons.refresh),
+          onPressed: () => ref.invalidate(listingsProvider),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(listingsProvider),
-          ),
-          IconButton(
-            tooltip: 'Create listing',
-            icon: const Icon(Icons.add),
-            onPressed: canCreate ? _openCreateDialog : null,
-          ),
-        ],
-      ),
-      body: listings.when(
+        IconButton(
+          tooltip: 'Create listing',
+          icon: const Icon(Icons.add),
+          onPressed: canCreate ? _openCreateDialog : null,
+        ),
+      ],
+      child: listings.when(
         data: (items) {
           final pending = items
               .where((e) => (e.status ?? '').toLowerCase().contains('pending'))
@@ -618,6 +609,8 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
                   message:
                       'No listings yet. Create your first listing to start verification and publication workflow.',
                 ),
+                const SizedBox(height: 12),
+                const JusticeCityFooter(),
               ],
             );
           }
@@ -805,6 +798,8 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 12),
+              const JusticeCityFooter(),
             ],
           );
         },
@@ -1005,28 +1000,6 @@ class _EmptyStateCard extends StatelessWidget {
       child: Text(
         message,
         style: const TextStyle(color: Color(0xFF64748B)),
-      ),
-    );
-  }
-}
-
-class _BrandWordmark extends StatelessWidget {
-  const _BrandWordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/logo.png',
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => const Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'JUSTICE CITY',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: _jcHeading,
-          ),
-        ),
       ),
     );
   }
