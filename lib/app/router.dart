@@ -52,12 +52,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Auth gate
       if (!signedIn && !isAuthRoute && !isPublicAuthRoute) return '/welcome';
       if (signedIn && isAuthRoute) {
-        final verification = ref.read(verificationStatusProvider);
-        return verification.when(
-          data: (s) => (s?.isVerified == true) ? '/home' : '/verify',
-          loading: () => '/verify',
-          error: (_, __) => '/verify',
-        );
+        return '/home';
       }
 
       // Admin gate
