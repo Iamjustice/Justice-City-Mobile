@@ -9,7 +9,7 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(
-          home: AuthScreen(showServiceStatusBanner: false),
+          home: AuthScreen(),
         ),
       ),
     );
