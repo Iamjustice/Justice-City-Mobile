@@ -30,7 +30,7 @@ const _jcPageBg = Color(0xFFF4F7FB);
 const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
-const _jcRadius = 12.0;
+const _jcRadius = 18.0;
 
 class ListingsScreen extends ConsumerStatefulWidget {
   const ListingsScreen({super.key});
@@ -999,7 +999,7 @@ class _EmptyStateCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(_jcRadius),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Text(
@@ -1021,7 +1021,7 @@ class _BrandWordmark extends StatelessWidget {
       errorBuilder: (_, __, ___) => const Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'JUSTICE CITY LTD',
+          'JUSTICE CITY',
           style: TextStyle(
             fontWeight: FontWeight.w800,
             color: _jcHeading,

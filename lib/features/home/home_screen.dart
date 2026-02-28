@@ -210,7 +210,7 @@ class _TopBar extends StatelessWidget {
                   'assets/images/logo.png',
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => Text(
-                    'JUSTICE CITY LTD',
+                    'JUSTICE CITY',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0F172A),
@@ -235,7 +235,7 @@ class _TopBar extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x14000000),
@@ -591,11 +591,11 @@ class _TrustStrip extends StatelessWidget {
               value: isOperator ? 'Operator tools' : 'Client tools',
             ),
           ),
-          Expanded(
-            child: _TrustMetric(
-              label: 'Support',
-              value: 'Live services',
-            ),
+        const Expanded(
+          child: _TrustMetric(
+            label: 'Support',
+            value: 'Live services',
+          ),
           ),
         ],
       ),

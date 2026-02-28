@@ -161,7 +161,7 @@ class _AdminDashboard extends ConsumerWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: _jcPanelBorder),
                     ),
                     child: const TabBar(
@@ -276,7 +276,7 @@ class _AgentDashboard extends ConsumerWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: _jcPanelBorder),
                     ),
                     child: const TabBar(
@@ -467,7 +467,7 @@ class _OwnerDashboard extends ConsumerWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: _jcPanelBorder),
                     ),
                     child: const TabBar(
@@ -708,7 +708,7 @@ class _ConsoleHeader extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _jcPanelBorder),
       ),
       child: Column(
@@ -774,7 +774,7 @@ class _KpiCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _jcPanelBorder),
       ),
       child: Column(
@@ -813,7 +813,7 @@ class _ListingsPane extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _jcPanelBorder),
           ),
           child: Row(
@@ -936,12 +936,12 @@ class _ListingPreviewTile extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: InkWell(
         onTap: () => context.go('/property/${listing.id}', extra: listing),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         child: Row(
           children: [
             Container(
@@ -1002,12 +1002,12 @@ class _ActionTile extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         child: Row(
           children: [
             Container(
@@ -1098,7 +1098,7 @@ class _EmptyState extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Text(
@@ -1120,7 +1120,7 @@ class _BrandWordmark extends StatelessWidget {
       errorBuilder: (_, __, ___) => const Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'JUSTICE CITY LTD',
+          'JUSTICE CITY',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),

@@ -301,7 +301,7 @@ class _SectionCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _jcPanelBorder),
       ),
       child: Column(
@@ -353,7 +353,7 @@ class _IssueCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUnread = card.isUnread;
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(18),
       onTap: () {
         if (card.conversationId != null && card.conversationId!.isNotEmpty) {
           if (card.transactionId != null && card.transactionId!.isNotEmpty) {
@@ -368,7 +368,7 @@ class _IssueCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _jcPanelBorder),
         ),
         child: Row(
@@ -439,13 +439,13 @@ class _ConversationTile extends StatelessWidget {
             ? conversation.participants.map((p) => p.name).join(', ')
             : 'Conversation');
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(18),
       onTap: () => context.go('/chat/${conversation.id}', extra: conversation),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _jcPanelBorder),
         ),
         child: Row(
@@ -495,7 +495,7 @@ class _BrandWordmark extends StatelessWidget {
       errorBuilder: (_, __, ___) => const Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'JUSTICE CITY LTD',
+          'JUSTICE CITY',
           style: TextStyle(
             fontWeight: FontWeight.w800,
             color: _jcHeading,

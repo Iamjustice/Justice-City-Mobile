@@ -508,9 +508,9 @@ class _VerifyProgressStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Card(
+    return const _Card(
       child: Row(
-        children: const [
+        children: [
           Expanded(
             child: _VerifyMetric(
               step: '01',
@@ -646,7 +646,7 @@ class _Card extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: dark ? const Color(0xFF0F172A) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: dark ? const Color(0xFF1E293B) : _jcPanelBorder,
         ),
@@ -721,7 +721,7 @@ class _BrandWordmark extends StatelessWidget {
       errorBuilder: (_, __, ___) => const Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'JUSTICE CITY LTD',
+          'JUSTICE CITY',
           style: TextStyle(
             color: _jcHeading,
             fontWeight: FontWeight.w800,

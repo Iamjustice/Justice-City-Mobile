@@ -457,7 +457,7 @@ class _BrandWordmark extends StatelessWidget {
       errorBuilder: (_, __, ___) => const Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'JUSTICE CITY LTD',
+          'JUSTICE CITY',
           style: TextStyle(
             fontWeight: FontWeight.w800,
             color: _jcHeading,

@@ -113,7 +113,7 @@ class AdminDashboardScreen extends ConsumerWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: _jcPanelBorder),
                 ),
                 child: const TabBar(
@@ -245,8 +245,8 @@ class _AdminHeroShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: const [
+    return const Column(
+      children: [
         _AdminHeaderBlock(),
         SizedBox(height: 12),
         _AdminOpsRibbon(),
@@ -260,8 +260,8 @@ class _AdminOpsRibbon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: const [
+    return const Row(
+      children: [
         Expanded(
           child: _AdminOpsMetric(
             label: 'Moderation',
@@ -1285,7 +1285,7 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _jcPanelBorder),
       ),
       child: Column(
@@ -1396,7 +1396,7 @@ class _PanelCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _jcPanelBorder),
       ),
       child: child,
@@ -1444,7 +1444,7 @@ class _BrandWordmark extends StatelessWidget {
       errorBuilder: (_, __, ___) => const Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'JUSTICE CITY LTD',
+          'JUSTICE CITY',
           style: TextStyle(
             fontWeight: FontWeight.w800,
             color: _jcHeading,

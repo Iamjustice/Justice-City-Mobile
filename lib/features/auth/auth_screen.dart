@@ -422,7 +422,7 @@ class _BrandHeader extends StatelessWidget {
               'assets/images/logo.png',
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => Text(
-                'JUSTICE CITY LTD',
+                'JUSTICE CITY',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF0F172A),
