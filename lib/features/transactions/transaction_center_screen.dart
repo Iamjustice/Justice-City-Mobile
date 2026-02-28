@@ -8,6 +8,11 @@ import '../../state/transaction_providers.dart';
 import '../../domain/models/chat_action.dart';
 import '../../domain/models/transaction.dart';
 
+const _txPageBg = Color(0xFFF4F7FB);
+const _txPanelBorder = Color(0xFFE2E8F0);
+const _txHeading = Color(0xFF0F172A);
+const _txMuted = Color(0xFF64748B);
+
 class TransactionCenterScreen extends ConsumerStatefulWidget {
   final String conversationId;
   const TransactionCenterScreen({super.key, required this.conversationId});
@@ -38,7 +43,12 @@ class _TransactionCenterScreenState
         ref.watch(transactionByConversationProvider(widget.conversationId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Transaction & Escrow')),
+      backgroundColor: _txPageBg,
+      appBar: AppBar(
+        backgroundColor: _txPageBg,
+        surfaceTintColor: Colors.transparent,
+        title: const Text('Transaction & Escrow'),
+      ),
       body: txAsync.when(
         data: (tx) => _Body(
           conversationId: widget.conversationId,
@@ -99,13 +109,19 @@ class _Body extends ConsumerWidget {
 
     if (tx == null) {
       return Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const _TransactionHeroHeader(
+              title: 'Transaction workspace',
+              subtitle:
+                  'Create the escrow record for this conversation and start the formal transaction flow.',
+            ),
+            const SizedBox(height: 12),
             const Text(
               'No transaction is linked to this conversation yet.',
-              style: TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 16, color: _txMuted),
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
@@ -143,172 +159,209 @@ class _Body extends ConsumerWidget {
         ref.invalidate(transactionDisputesProvider(tx!.id));
       },
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         children: [
+          _TransactionHeroHeader(
+            title: 'Escrow and closing workspace',
+            subtitle:
+                'Track status, approvals, disputes, payout, and ratings for this deal.',
+            trailing: _HeroStatusBadge(text: tx!.status),
+          ),
+          const SizedBox(height: 12),
+          _TransactionMetricStrip(tx: tx!),
+          const SizedBox(height: 12),
           _TransactionCard(tx: tx!),
           const SizedBox(height: 12),
-          _StatusCard(
-            current: tx!.status,
-            toStatus: toStatus,
-            reasonCtrl: statusReasonCtrl,
-            onChanged: onStatusChanged,
-            onApply: () async {
-              try {
-                await controller.changeStatus(
-                  conversationId,
-                  tx!.id,
-                  toStatus,
-                  reason: statusReasonCtrl.text.trim().isEmpty
-                      ? null
-                      : statusReasonCtrl.text.trim(),
-                );
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Status updated.')),
-                );
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content:
-                        Text('Status update failed: ${_readableApiError(e)}'),
-                  ),
-                );
-              }
-            },
+          _SurfaceSection(
+            title: 'Status control',
+            subtitle: 'Move the deal through the next escrow stage.',
+            child: _StatusCard(
+              current: tx!.status,
+              toStatus: toStatus,
+              reasonCtrl: statusReasonCtrl,
+              onChanged: onStatusChanged,
+              onApply: () async {
+                try {
+                  await controller.changeStatus(
+                    conversationId,
+                    tx!.id,
+                    toStatus,
+                    reason: statusReasonCtrl.text.trim().isEmpty
+                        ? null
+                        : statusReasonCtrl.text.trim(),
+                  );
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Status updated.')),
+                  );
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text('Status update failed: ${_readableApiError(e)}'),
+                    ),
+                  );
+                }
+              },
+            ),
           ),
           if (canCreateActions) ...[
             const SizedBox(height: 12),
-            _CreateActionCard(
-              conversationId: conversationId,
-              transactionId: tx!.id,
-              onCreated: () =>
-                  ref.invalidate(transactionActionsProvider(tx!.id)),
+            _SurfaceSection(
+              title: 'Required actions',
+              subtitle: 'Request proofs, signatures, deliverables, and approvals.',
+              child: _CreateActionCard(
+                conversationId: conversationId,
+                transactionId: tx!.id,
+                onCreated: () =>
+                    ref.invalidate(transactionActionsProvider(tx!.id)),
+              ),
             ),
           ],
           if (canClaimPayout) ...[
             const SizedBox(height: 12),
-            _PayoutClaimCard(
-              conversationId: conversationId,
-              transactionId: tx!.id,
+            _SurfaceSection(
+              title: 'Payout claim',
+              subtitle: 'Register payout requests and settlement details.',
+              child: _PayoutClaimCard(
+                conversationId: conversationId,
+                transactionId: tx!.id,
+              ),
             ),
           ],
           if (canSubmitRatings) ...[
             const SizedBox(height: 12),
-            _SubmitRatingCard(
-              conversationId: conversationId,
-              transactionId: tx!.id,
+            _SurfaceSection(
+              title: 'Completion rating',
+              subtitle: 'Score the experience after delivery or closing.',
+              child: _SubmitRatingCard(
+                conversationId: conversationId,
+                transactionId: tx!.id,
+              ),
             ),
           ],
           const SizedBox(height: 12),
-          ExpansionTile(
-            title: const Text('Actions'),
-            subtitle: const Text('System prompts and approvals'),
-            children: [
-              actionsAsync.when(
-                data: (items) => items.isEmpty
-                    ? const ListTile(title: Text('No actions yet.'))
-                    : Column(
-                        children: items
-                            .map((a) => _ActionResolutionTile(
-                                  action: a,
-                                  conversationId: conversationId,
-                                  transactionId: tx!.id,
-                                  userRole: userRole,
-                                  onResolved: () {
-                                    ref.invalidate(
-                                        transactionActionsProvider(tx!.id));
-                                    ref.invalidate(
-                                      transactionByConversationProvider(
-                                          conversationId),
-                                    );
-                                  },
-                                ))
-                            .toList(),
-                      ),
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (e, _) => ListTile(
-                  title: const Text('Failed to load actions'),
-                  subtitle: Text(e.toString()),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () =>
-                        ref.invalidate(transactionActionsProvider(tx!.id)),
+          _SurfaceSection(
+            title: 'Action queue',
+            subtitle: 'System prompts, pending approvals, and required responses.',
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              title: const Text('Actions'),
+              subtitle: const Text('System prompts and approvals'),
+              children: [
+                actionsAsync.when(
+                  data: (items) => items.isEmpty
+                      ? const ListTile(title: Text('No actions yet.'))
+                      : Column(
+                          children: items
+                              .map((a) => _ActionResolutionTile(
+                                    action: a,
+                                    conversationId: conversationId,
+                                    transactionId: tx!.id,
+                                    userRole: userRole,
+                                    onResolved: () {
+                                      ref.invalidate(
+                                          transactionActionsProvider(tx!.id));
+                                      ref.invalidate(
+                                        transactionByConversationProvider(
+                                            conversationId),
+                                      );
+                                    },
+                                  ))
+                              .toList(),
+                        ),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (e, _) => ListTile(
+                    title: const Text('Failed to load actions'),
+                    subtitle: Text(e.toString()),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () =>
+                          ref.invalidate(transactionActionsProvider(tx!.id)),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          ExpansionTile(
-            title: const Text('Disputes'),
-            subtitle: const Text('Open and resolved cases'),
-            children: [
-              _OpenDisputeForm(
-                reasonCtrl: reasonCtrl,
-                detailsCtrl: detailsCtrl,
-                onSubmit: () async {
-                  final reason = reasonCtrl.text.trim();
-                  if (reason.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Reason is required.')));
-                    return;
-                  }
-                  try {
-                    await controller.openDispute(
-                      conversationId,
-                      tx!.id,
-                      reason,
-                      details: detailsCtrl.text.trim().isEmpty
-                          ? null
-                          : detailsCtrl.text.trim(),
-                    );
-                    reasonCtrl.clear();
-                    detailsCtrl.clear();
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Dispute opened.')),
-                    );
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('Dispute failed: ${_readableApiError(e)}')),
-                    );
-                  }
-                },
-              ),
-              disputesAsync.when(
-                data: (items) => items.isEmpty
-                    ? const ListTile(title: Text('No disputes.'))
-                    : Column(
-                        children: items
-                            .map((d) => ListTile(
-                                  title: Text(
-                                      '${d.status.toUpperCase()}: ${d.reason}'),
-                                  subtitle: Text(d.details ?? '-'),
-                                ))
-                            .toList(),
-                      ),
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
+          _SurfaceSection(
+            title: 'Dispute center',
+            subtitle: 'Open a case or review active dispute history.',
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              title: const Text('Disputes'),
+              subtitle: const Text('Open and resolved cases'),
+              children: [
+                _OpenDisputeForm(
+                  reasonCtrl: reasonCtrl,
+                  detailsCtrl: detailsCtrl,
+                  onSubmit: () async {
+                    final reason = reasonCtrl.text.trim();
+                    if (reason.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Reason is required.')));
+                      return;
+                    }
+                    try {
+                      await controller.openDispute(
+                        conversationId,
+                        tx!.id,
+                        reason,
+                        details: detailsCtrl.text.trim().isEmpty
+                            ? null
+                            : detailsCtrl.text.trim(),
+                      );
+                      reasonCtrl.clear();
+                      detailsCtrl.clear();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Dispute opened.')),
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(
+                                'Dispute failed: ${_readableApiError(e)}')),
+                      );
+                    }
+                  },
                 ),
-                error: (e, _) => ListTile(
-                  title: const Text('Failed to load disputes'),
-                  subtitle: Text(e.toString()),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () =>
-                        ref.invalidate(transactionDisputesProvider(tx!.id)),
+                disputesAsync.when(
+                  data: (items) => items.isEmpty
+                      ? const ListTile(title: Text('No disputes.'))
+                      : Column(
+                          children: items
+                              .map((d) => ListTile(
+                                    title: Text(
+                                        '${d.status.toUpperCase()}: ${d.reason}'),
+                                    subtitle: Text(d.details ?? '-'),
+                                  ))
+                              .toList(),
+                        ),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (e, _) => ListTile(
+                    title: const Text('Failed to load disputes'),
+                    subtitle: Text(e.toString()),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () =>
+                          ref.invalidate(transactionDisputesProvider(tx!.id)),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           TextButton.icon(
@@ -320,6 +373,213 @@ class _Body extends ConsumerWidget {
             icon: const Icon(Icons.refresh),
             label: const Text('Refresh'),
           )
+        ],
+      ),
+    );
+  }
+}
+
+class _TransactionHeroHeader extends StatelessWidget {
+  const _TransactionHeroHeader({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.45,
+                    color: Color(0xFFCBD5E1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 12),
+            trailing!,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroStatusBadge extends StatelessWidget {
+  const _HeroStatusBadge({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Color(0xFFE2E8F0),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionMetricStrip extends StatelessWidget {
+  const _TransactionMetricStrip({required this.tx});
+
+  final Transaction tx;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _TransactionMetricCard(
+            label: 'Type',
+            value: tx.transactionKind,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _TransactionMetricCard(
+            label: 'Mode',
+            value: tx.closingMode.trim().isEmpty ? 'standard' : tx.closingMode,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _TransactionMetricCard(
+            label: 'Amount',
+            value: tx.principalAmount == null
+                ? tx.currency
+                : '${tx.currency} ${tx.principalAmount}',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TransactionMetricCard extends StatelessWidget {
+  const _TransactionMetricCard({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _txPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: _txMuted),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: _txHeading,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SurfaceSection extends StatelessWidget {
+  const _SurfaceSection({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _txPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _txHeading,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 14, color: _txMuted),
+          ),
+          const SizedBox(height: 12),
+          child,
         ],
       ),
     );

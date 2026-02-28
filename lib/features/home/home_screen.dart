@@ -49,6 +49,11 @@ class HomeScreen extends ConsumerWidget {
                       verification: verification,
                       onVerifyTap: () => context.go('/verify'),
                     ),
+                    const SizedBox(height: 12),
+                    _TrustStrip(
+                      verified: verified,
+                      isOperator: isOperator,
+                    ),
                   ],
                 ),
               ),
@@ -412,44 +417,63 @@ class _QuickActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 36,
-                width: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(18),
+      elevation: 0,
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          gradient: const LinearGradient(
+            colors: [Colors.white, Color(0xFFF8FAFC)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x120F172A),
+              blurRadius: 18,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 40,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, size: 20, color: Colors.white),
                 ),
-                child: Icon(icon, size: 20, color: const Color(0xFF0F172A)),
-              ),
-              const Spacer(),
-              Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0F172A),
-                    ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF64748B),
-                    ),
-              ),
-            ],
+                const Spacer(),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0F172A),
+                      ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF64748B),
+                      ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -476,9 +500,9 @@ class _WorkspaceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: enabled ? onTap : null,
         child: Opacity(
           opacity: enabled ? 1 : 0.65,
@@ -490,10 +514,15 @@ class _WorkspaceCard extends StatelessWidget {
                   height: 42,
                   width: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
+                    color: enabled
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFE2E8F0),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: const Color(0xFF0F172A)),
+                  child: Icon(
+                    icon,
+                    color: enabled ? Colors.white : const Color(0xFF0F172A),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -526,6 +555,80 @@ class _WorkspaceCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TrustStrip extends StatelessWidget {
+  const _TrustStrip({
+    required this.verified,
+    required this.isOperator,
+  });
+
+  final bool verified;
+  final bool isOperator;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _TrustMetric(
+              label: 'Access',
+              value: verified ? 'Unlocked' : 'Verification needed',
+            ),
+          ),
+          Expanded(
+            child: _TrustMetric(
+              label: 'Workspace',
+              value: isOperator ? 'Operator tools' : 'Client tools',
+            ),
+          ),
+          Expanded(
+            child: _TrustMetric(
+              label: 'Support',
+              value: 'Live services',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrustMetric extends StatelessWidget {
+  const _TrustMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF64748B),
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0F172A),
+              ),
+        ),
+      ],
     );
   }
 }

@@ -73,6 +73,11 @@ class ChatScreen extends ConsumerWidget {
                 totalIssues: data.cards.length,
               ),
               const SizedBox(height: 12),
+              _InboxQuickRail(
+                totalConversations: data.conversations.length,
+                totalIssues: data.cards.length,
+              ),
+              const SizedBox(height: 12),
               _SectionCard(
                 title: 'Issue Notifications',
                 subtitle: 'System-generated cards that need attention.',
@@ -140,9 +145,19 @@ class _InboxHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _jcPanelBorder),
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x220F172A),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -155,7 +170,7 @@ class _InboxHeader extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
-                    color: _jcHeading,
+                    color: Colors.white,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -163,7 +178,7 @@ class _InboxHeader extends StatelessWidget {
                   'Track issue cards, listing discussions, and support threads.',
                   style: TextStyle(
                     fontSize: 16,
-                    color: _jcMuted,
+                    color: Color(0xFFCBD5E1),
                   ),
                 ),
               ],
@@ -186,8 +201,8 @@ class _InboxHeader extends StatelessWidget {
   Widget _pill(String label, String value) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          border: Border.all(color: _jcPanelBorder),
+          color: Colors.white.withValues(alpha: 0.08),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
@@ -195,10 +210,78 @@ class _InboxHeader extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 12,
-            color: _jcHeading,
+            color: Color(0xFFE2E8F0),
           ),
         ),
       );
+}
+
+class _InboxQuickRail extends StatelessWidget {
+  const _InboxQuickRail({
+    required this.totalConversations,
+    required this.totalIssues,
+  });
+
+  final int totalConversations;
+  final int totalIssues;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _MiniInboxMetric(
+            label: 'Open threads',
+            value: '$totalConversations',
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _MiniInboxMetric(
+            label: 'Issue cards',
+            value: '$totalIssues',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniInboxMetric extends StatelessWidget {
+  const _MiniInboxMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: _jcMuted),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SectionCard extends StatelessWidget {

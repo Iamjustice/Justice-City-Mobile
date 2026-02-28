@@ -154,13 +154,17 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: _ThreadHeroCard(title: title),
+          ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: _jcPanelBorder),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -188,7 +192,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                           ),
                           const SizedBox(height: 2),
                           const Text(
-                            'Use this thread for listing support, transaction updates, and file exchange.',
+                            'Use this thread for listing support, transaction updates, approvals, and file exchange.',
                             style: TextStyle(fontSize: 14, color: _jcMuted),
                           ),
                         ],
@@ -264,7 +268,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                                 minLines: 1,
                                 maxLines: 4,
                                 decoration: const InputDecoration(
-                                  hintText: 'Type message...',
+                                  hintText: 'Write an update or request...',
                                   hintStyle: TextStyle(color: _jcMuted),
                                   fillColor: Color(0xFFF8FAFC),
                                   filled: true,
@@ -378,6 +382,65 @@ class _Bubble extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ThreadHeroCard extends StatelessWidget {
+  const _ThreadHeroCard({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.forum_outlined, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Thread workspace for negotiations, support notes, attachments, and transaction coordination.',
+            style: TextStyle(
+              color: Color(0xFFCBD5E1),
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }

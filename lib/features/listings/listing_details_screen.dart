@@ -20,13 +20,15 @@ const _jcRadius = 12.0;
 final listingByIdProvider = Provider.family<Listing?, String>((ref, id) {
   final asyncListings = ref.watch(listingsProvider);
   return asyncListings.maybeWhen(
-    data: (items) => items.where((e) => e.id == id).cast<Listing?>().firstOrNull,
+    data: (items) =>
+        items.where((e) => e.id == id).cast<Listing?>().firstOrNull,
     orElse: () => null,
   );
 });
 
 final listingDetailRecordProvider =
-    FutureProvider.family<Map<String, dynamic>?, String>((ref, listingId) async {
+    FutureProvider.family<Map<String, dynamic>?, String>(
+        (ref, listingId) async {
   final session = ref.watch(sessionProvider);
   if (session == null) return null;
   final me = ref.watch(meProvider).valueOrNull;
@@ -57,15 +59,32 @@ class ListingDetailsScreen extends ConsumerStatefulWidget {
   final bool showVerificationOnOpen;
 
   @override
-  ConsumerState<ListingDetailsScreen> createState() => _ListingDetailsScreenState();
+  ConsumerState<ListingDetailsScreen> createState() =>
+      _ListingDetailsScreenState();
 }
 
 class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   String? _statusDraft;
   bool _statusBusy = false;
   bool _openedVerification = false;
+  bool _isSaved = false;
+  late final PageController _heroController;
+  int _heroIndex = 0;
 
-  bool get _isAdmin => (ref.read(meProvider).valueOrNull?.role ?? '').toLowerCase() == 'admin';
+  @override
+  void initState() {
+    super.initState();
+    _heroController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _heroController.dispose();
+    super.dispose();
+  }
+
+  bool get _isAdmin =>
+      (ref.read(meProvider).valueOrNull?.role ?? '').toLowerCase() == 'admin';
 
   bool _canManage(Listing listing) {
     if (_isAdmin) return true;
@@ -82,7 +101,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     return ListingActor(
       actorId: session.userId,
       actorRole: me?.role,
-      actorName: (me?.fullName ?? '').trim().isNotEmpty ? me!.fullName : session.email,
+      actorName:
+          (me?.fullName ?? '').trim().isNotEmpty ? me!.fullName : session.email,
     );
   }
 
@@ -118,12 +138,16 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final listing = widget.initial ?? ref.watch(listingByIdProvider(widget.listingId));
-    final record = ref.watch(listingDetailRecordProvider(widget.listingId)).valueOrNull;
+    final listing =
+        widget.initial ?? ref.watch(listingByIdProvider(widget.listingId));
+    final record =
+        ref.watch(listingDetailRecordProvider(widget.listingId)).valueOrNull;
     final steps = _parseSteps(record);
     final progress = _progress(steps);
 
-    if (listing != null && widget.showVerificationOnOpen && !_openedVerification) {
+    if (listing != null &&
+        widget.showVerificationOnOpen &&
+        !_openedVerification) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _openedVerification) return;
         _openedVerification = true;
@@ -140,15 +164,25 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
 
     final canManage = _canManage(listing);
     final completed = steps.where((s) => s.status == 'completed').length;
+    final me = ref.watch(meProvider).valueOrNull;
+    final isVerifiedUser = me?.isVerified == true;
+    final galleryItems = _buildGalleryItems(listing, record, progress);
+    final statCards = _buildStatCards(listing, record);
+    final documents = _buildDocumentCards(steps);
+    final priceText =
+        [listing.price, listing.priceSuffix].whereType<String>().join(' ');
+
     return Scaffold(
       backgroundColor: _jcPageBg,
       appBar: AppBar(
         backgroundColor: _jcPageBg,
+        surfaceTintColor: Colors.transparent,
+        titleSpacing: 0,
         title: const Text(
           'Property Details',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            fontSize: 30,
+            fontSize: 24,
             color: _jcHeading,
           ),
         ),
@@ -160,43 +194,245 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               ref.invalidate(listingDetailRecordProvider(widget.listingId));
             },
           ),
+          IconButton(
+            icon: Icon(_isSaved ? Icons.favorite : Icons.favorite_border),
+            onPressed: () => setState(() => _isSaved = !_isSaved),
+          ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
         children: [
+          Container(
+            height: 360,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x220F172A),
+                  blurRadius: 28,
+                  offset: Offset(0, 18),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                PageView.builder(
+                  controller: _heroController,
+                  itemCount: galleryItems.length,
+                  onPageChanged: (index) => setState(() => _heroIndex = index),
+                  itemBuilder: (context, index) =>
+                      _HeroGalleryPanel(item: galleryItems[index]),
+                ),
+                Positioned(
+                  top: 18,
+                  left: 18,
+                  right: 18,
+                  child: Row(
+                    children: [
+                      _HeroBadge(
+                        icon: Icons.sell_outlined,
+                        label: listing.listingType ?? 'Property',
+                        background: const Color(0xFF2563EB),
+                        foreground: Colors.white,
+                      ),
+                      const Spacer(),
+                      const _HeroBadge(
+                        icon: Icons.verified_user_outlined,
+                        label: 'Verified Title',
+                        background: Color(0xFF16A34A),
+                        foreground: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  left: 18,
+                  right: 18,
+                  bottom: 18,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0x66000000),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: const Color(0x33FFFFFF)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                priceText.isEmpty
+                                    ? 'Price on request'
+                                    : priceText,
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${_heroIndex + 1} / ${galleryItems.length}',
+                                style: const TextStyle(
+                                  color: Color(0xFFE2E8F0),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _HeroCircleButton(
+                            icon: Icons.chevron_left,
+                            onTap: galleryItems.length <= 1
+                                ? null
+                                : () {
+                                    final target = (_heroIndex - 1)
+                                        .clamp(0, galleryItems.length - 1);
+                                    _heroController.animateToPage(
+                                      target,
+                                      duration:
+                                          const Duration(milliseconds: 240),
+                                      curve: Curves.easeOut,
+                                    );
+                                  },
+                          ),
+                          const SizedBox(height: 8),
+                          _HeroCircleButton(
+                            icon: Icons.chevron_right,
+                            onTap: galleryItems.length <= 1
+                                ? null
+                                : () {
+                                    final target = (_heroIndex + 1)
+                                        .clamp(0, galleryItems.length - 1);
+                                    _heroController.animateToPage(
+                                      target,
+                                      duration:
+                                          const Duration(milliseconds: 240),
+                                      curve: Curves.easeOut,
+                                    );
+                                  },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            listing.title,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
+              height: 1.05,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined,
+                  color: Color(0xFF2563EB), size: 20),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  listing.location ?? '-',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: _jcMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              _StatusChip(status: listing.status ?? '-'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: statCards
+                .map(
+                  (item) => Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          right: item == statCards.last ? 0 : 10),
+                      child: _DetailStatCard(item: item),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 16),
           _Card(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(
-                listing.title,
-                style: const TextStyle(
-                  fontSize: 30,
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text(
+                'About this property',
+                style: TextStyle(
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: _jcHeading,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text('${listing.location ?? '-'} - ${listing.listingType ?? '-'}',
-                  style: const TextStyle(fontSize: 14, color: _jcMuted)),
               const SizedBox(height: 10),
-              Row(children: [
-                Expanded(
-                  child: Text(
-                    'Price: ${[listing.price, listing.priceSuffix].whereType<String>().join(' ')}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: _jcHeading,
-                    ),
-                  ),
+              Text(
+                (listing.description ?? '').trim().isEmpty
+                    ? 'No description has been provided for this listing yet.'
+                    : listing.description!.trim(),
+                style: const TextStyle(
+                  fontSize: 17,
+                  height: 1.65,
+                  color: Color(0xFF334155),
                 ),
-                _StatusChip(status: listing.status ?? '-'),
-              ]),
+              ),
+              const SizedBox(height: 18),
+              const Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _FeatureChip(label: '24/7 Power'),
+                  _FeatureChip(label: 'Gated Security'),
+                  _FeatureChip(label: 'Treated Water'),
+                  _FeatureChip(label: 'Parking Space'),
+                ],
+              ),
             ]),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
+          _DarkSectionCard(
+            title: 'Verified Documentation',
+            subtitle: isVerifiedUser
+                ? 'Document previews follow live verification progress.'
+                : 'Full document access is restricted to verified users only.',
+            children: [
+              ...documents,
+              if (!isVerifiedUser) ...[
+                const SizedBox(height: 12),
+                const _LockNotice(
+                  message:
+                      'Full document access is restricted to verified users only.',
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
           _Card(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 const Expanded(
                   child: Text(
@@ -218,7 +454,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                 ),
               ]),
               const SizedBox(height: 6),
-              LinearProgressIndicator(value: steps.isEmpty ? 0 : progress / 100),
+              LinearProgressIndicator(
+                  value: steps.isEmpty ? 0 : progress / 100),
               const SizedBox(height: 6),
               Text(
                 steps.isEmpty
@@ -234,19 +471,124 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               ),
             ]),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           _Card(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Listing Status', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Justice City Support',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: _jcHeading,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Verified property support desk',
+                            style: TextStyle(color: _jcMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: () => context.go('/chat'),
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Chat with Support'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/request-callback'),
+                  icon: const Icon(Icons.call_outlined),
+                  label: const Text('Request Callback'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/schedule-tour'),
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: const Text('Schedule Tour'),
+                ),
+                const SizedBox(height: 18),
+                const Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.verified_user_outlined,
+                            color: Color(0xFF16A34A), size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'Justice Protect',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.1,
+                            color: _jcHeading,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Identity and contact details stay protected until verification and workflow checks are complete.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 12, color: _jcMuted, height: 1.45),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _Card(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text(
+                'Listing Status',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  color: _jcHeading,
+                ),
+              ),
               const SizedBox(height: 8),
               if (canManage)
                 DropdownButtonFormField<String>(
                   initialValue: _statusDraft ?? listing.status,
                   items: const [
                     DropdownMenuItem(value: 'Draft', child: Text('Draft')),
-                    DropdownMenuItem(value: 'Pending Review', child: Text('Pending Review')),
-                    DropdownMenuItem(value: 'Published', child: Text('Published')),
-                    DropdownMenuItem(value: 'Archived', child: Text('Archived')),
+                    DropdownMenuItem(
+                        value: 'Pending Review', child: Text('Pending Review')),
+                    DropdownMenuItem(
+                        value: 'Published', child: Text('Published')),
+                    DropdownMenuItem(
+                        value: 'Archived', child: Text('Archived')),
                     DropdownMenuItem(value: 'Sold', child: Text('Sold')),
                     DropdownMenuItem(value: 'Rented', child: Text('Rented')),
                   ],
@@ -257,30 +599,19 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               const SizedBox(height: 8),
               if (canManage)
                 FilledButton.icon(
-                  onPressed: _statusBusy || _statusDraft == null ? null : () => _applyStatus(listing),
+                  onPressed: _statusBusy || _statusDraft == null
+                      ? null
+                      : () => _applyStatus(listing),
                   icon: const Icon(Icons.save_outlined),
                   label: const Text('Save Status'),
                 ),
-            ]),
-          ),
-          const SizedBox(height: 10),
-          _Card(
-            child: Wrap(spacing: 8, runSpacing: 8, children: [
-              OutlinedButton.icon(
-                onPressed: () => context.go('/request-callback'),
-                icon: const Icon(Icons.call_outlined),
-                label: const Text('Request Callback'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => context.go('/schedule-tour'),
-                icon: const Icon(Icons.calendar_month_outlined),
-                label: const Text('Schedule Tour'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => context.go('/chat'),
-                icon: const Icon(Icons.chat_bubble_outline),
-                label: const Text('Message Support'),
-              ),
+              if (!canManage) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'This listing is currently read-only for your account.',
+                  style: TextStyle(color: _jcMuted),
+                ),
+              ],
             ]),
           ),
         ],
@@ -288,25 +619,30 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     );
   }
 
-  Future<void> _openVerificationDialog(Listing listing, List<_StepVm> seed) async {
+  Future<void> _openVerificationDialog(
+      Listing listing, List<_StepVm> seed) async {
     final actor = _actor();
     final canEdit = _isAdmin;
     var steps = List<_StepVm>.from(seed);
     var busy = false;
 
     Future<void> refreshSteps() async {
-      final latest = await ref.read(listingDetailRecordProvider(widget.listingId).future);
+      final latest =
+          await ref.read(listingDetailRecordProvider(widget.listingId).future);
       final fromServer = _parseSteps(latest);
       if (fromServer.isNotEmpty) {
         steps = fromServer;
       }
     }
 
-    Future<void> updateStep(StateSetter setModalState, String stepKey, String status) async {
+    Future<void> updateStep(
+        StateSetter setModalState, String stepKey, String status) async {
       if (!canEdit || actor == null) return;
       setModalState(() => busy = true);
       try {
-        await ref.read(listingsRepositoryProvider).updateListingVerificationStepStatus(
+        await ref
+            .read(listingsRepositoryProvider)
+            .updateListingVerificationStepStatus(
               listingId: listing.id,
               stepKey: stepKey,
               status: status,
@@ -334,7 +670,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
           final completed = steps.where((s) => s.status == 'completed').length;
           final progress = _progress(steps);
           return Dialog(
-            insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 920, maxHeight: 760),
               child: Column(
@@ -359,7 +696,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 '${listing.title} - $completed/${steps.length} checks completed.',
-                                style: const TextStyle(fontSize: 14, color: _jcMuted),
+                                style: const TextStyle(
+                                    fontSize: 14, color: _jcMuted),
                               ),
                               if (!canEdit)
                                 const Padding(
@@ -438,7 +776,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             step.label,
@@ -461,7 +800,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                     ),
                                     const SizedBox(width: 10),
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.symmetric(
@@ -470,7 +810,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: _stepStatusBg(step.status),
-                                            borderRadius: BorderRadius.circular(999),
+                                            borderRadius:
+                                                BorderRadius.circular(999),
                                           ),
                                           child: Text(
                                             _stepStatusLabel(step.status),
@@ -485,7 +826,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                           const SizedBox(height: 8),
                                           SizedBox(
                                             width: 155,
-                                            child: DropdownButtonFormField<String>(
+                                            child:
+                                                DropdownButtonFormField<String>(
                                               initialValue: step.status,
                                               style: const TextStyle(
                                                 fontSize: 14,
@@ -493,7 +835,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                                 fontWeight: FontWeight.w500,
                                               ),
                                               decoration: const InputDecoration(
-                                                contentPadding: EdgeInsets.symmetric(
+                                                contentPadding:
+                                                    EdgeInsets.symmetric(
                                                   horizontal: 10,
                                                   vertical: 8,
                                                 ),
@@ -520,7 +863,9 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                               onChanged: busy
                                                   ? null
                                                   : (value) {
-                                                      if (value == null || value == step.status) {
+                                                      if (value == null ||
+                                                          value ==
+                                                              step.status) {
                                                         return;
                                                       }
                                                       unawaited(
@@ -560,7 +905,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                 : () async {
                                     for (final step in steps) {
                                       if (step.status != 'completed') {
-                                        await updateStep(setModalState, step.key, 'completed');
+                                        await updateStep(setModalState,
+                                            step.key, 'completed');
                                       }
                                     }
                                   },
@@ -568,7 +914,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
                                   )
                                 : const Text('Complete All Checks'),
                           ),
@@ -582,6 +929,93 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
         },
       ),
     );
+  }
+
+  List<_HeroPanelItem> _buildGalleryItems(
+    Listing listing,
+    Map<String, dynamic>? record,
+    int progress,
+  ) {
+    final imageUrls = {
+      if ((listing.coverImageUrl ?? '').trim().isNotEmpty)
+        listing.coverImageUrl!.trim(),
+      ..._recordStringList(
+          record, const ['imageUrls', 'images', 'listingImages']),
+    }.toList();
+
+    final items = <_HeroPanelItem>[
+      if (imageUrls.isNotEmpty)
+        _HeroPanelItem.image(imageUrls.first)
+      else
+        const _HeroPanelItem.panel(
+          title: 'Property Showcase',
+          subtitle: 'Official media is being prepared for this listing.',
+          icon: Icons.home_work_outlined,
+        ),
+      _HeroPanelItem.panel(
+        title: 'Verification Workflow',
+        subtitle: progress == 0
+            ? 'Verification details are being prepared.'
+            : '$progress% of verification checks have been completed.',
+        icon: Icons.verified_user_outlined,
+      ),
+      _HeroPanelItem.panel(
+        title: listing.location ?? 'Property Location',
+        subtitle:
+            '${listing.listingType ?? 'Property'} • ${listing.status ?? 'Status pending'}',
+        icon: Icons.location_city_outlined,
+      ),
+    ];
+
+    return items;
+  }
+
+  List<_DetailStatItem> _buildStatCards(
+      Listing listing, Map<String, dynamic>? record) {
+    final bedrooms = _recordInt(record, const ['bedrooms']);
+    final bathrooms = _recordInt(record, const ['bathrooms']);
+    final sizeSqm =
+        _recordString(record, const ['property_size_sqm', 'propertySizeSqm']);
+
+    return [
+      _DetailStatItem(
+        label: 'Bedrooms',
+        value: bedrooms?.toString() ?? '--',
+        icon: Icons.bed_outlined,
+      ),
+      _DetailStatItem(
+        label: 'Bathrooms',
+        value: bathrooms?.toString() ?? '--',
+        icon: Icons.bathtub_outlined,
+      ),
+      _DetailStatItem(
+        label: 'Size',
+        value: (sizeSqm ?? '').trim().isEmpty ? '--' : '$sizeSqm sqm',
+        icon: Icons.open_in_full_outlined,
+      ),
+    ];
+  }
+
+  List<Widget> _buildDocumentCards(List<_StepVm> steps) {
+    final statusByKey = {
+      for (final step in steps) step.key: step.status,
+    };
+    return [
+      _DocumentPreviewTile(
+        title: 'Title Document',
+        status: statusByKey['ownership'] ?? 'pending',
+      ),
+      const SizedBox(height: 10),
+      _DocumentPreviewTile(
+        title: 'Ownership Authorization',
+        status: statusByKey['ownership_authorization'] ?? 'pending',
+      ),
+      const SizedBox(height: 10),
+      _DocumentPreviewTile(
+        title: 'Survey Plan',
+        status: statusByKey['survey'] ?? 'pending',
+      ),
+    ];
   }
 }
 
@@ -598,6 +1032,459 @@ class _Card extends StatelessWidget {
         ),
         child: child,
       );
+}
+
+class _HeroPanelItem {
+  const _HeroPanelItem._({
+    this.imageUrl,
+    this.title,
+    this.subtitle,
+    this.icon,
+  });
+
+  const _HeroPanelItem.image(String imageUrl)
+      : this._(
+          imageUrl: imageUrl,
+        );
+
+  const _HeroPanelItem.panel({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) : this._(
+          title: title,
+          subtitle: subtitle,
+          icon: icon,
+        );
+
+  final String? imageUrl;
+  final String? title;
+  final String? subtitle;
+  final IconData? icon;
+}
+
+class _HeroGalleryPanel extends StatelessWidget {
+  const _HeroGalleryPanel({required this.item});
+
+  final _HeroPanelItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    if ((item.imageUrl ?? '').trim().isNotEmpty) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.network(
+            item.imageUrl!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _HeroGradientFallback(item: item),
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0x33000000),
+                  Color(0x22000000),
+                  Color(0xAA000000),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return _HeroGradientFallback(item: item);
+  }
+}
+
+class _HeroGradientFallback extends StatelessWidget {
+  const _HeroGradientFallback({required this.item});
+
+  final _HeroPanelItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0F172A),
+            Color(0xFF1D4ED8),
+            Color(0xFF0B1120),
+          ],
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 92),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              color: const Color(0x1AFFFFFF),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            alignment: Alignment.center,
+            child: Icon(item.icon ?? Icons.home_work_outlined,
+                color: Colors.white, size: 30),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            item.title ?? 'Justice City',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            item.subtitle ?? '',
+            style: const TextStyle(
+              color: Color(0xFFE2E8F0),
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroBadge extends StatelessWidget {
+  const _HeroBadge({
+    required this.icon,
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: foreground),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: foreground,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroCircleButton extends StatelessWidget {
+  const _HeroCircleButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0x66000000),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(icon, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailStatItem {
+  const _DetailStatItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+}
+
+class _DetailStatCard extends StatelessWidget {
+  const _DetailStatCard({required this.item});
+
+  final _DetailStatItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Icon(item.icon, color: const Color(0xFF2563EB)),
+          const SizedBox(height: 8),
+          Text(
+            item.label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            item.value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureChip extends StatelessWidget {
+  const _FeatureChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: const BoxDecoration(
+              color: Color(0xFFDBEAFE),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Icons.check, size: 14, color: Color(0xFF2563EB)),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF334155),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DarkSectionCard extends StatelessWidget {
+  const _DarkSectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.children,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFF1E293B)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 24,
+            offset: Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.verified_outlined, color: Color(0xFF4ADE80)),
+              SizedBox(width: 10),
+            ],
+          ),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: Color(0xFF94A3B8),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 18),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _DocumentPreviewTile extends StatelessWidget {
+  const _DocumentPreviewTile({
+    required this.title,
+    required this.status,
+  });
+
+  final String title;
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = _stepStatusFg(status);
+    final bg = _stepStatusBg(status).withValues(alpha: 0.18);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0x14FFFFFF),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0x1FFFFFFF)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0x1A60A5FA),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Icons.description_outlined,
+                color: Color(0xFF60A5FA)),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Verified by Justice City workflow',
+                  style: TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              _stepStatusLabel(status),
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LockNotice extends StatelessWidget {
+  const _LockNotice({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0x1AF59E0B),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0x33F59E0B)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.lock_outline, color: Color(0xFFFCD34D)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Color(0xFFFDE68A), height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _StatusChip extends StatelessWidget {
@@ -639,8 +1526,49 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
+String? _recordString(Map<String, dynamic>? raw, List<String> keys) {
+  if (raw == null) return null;
+  for (final key in keys) {
+    final value = raw[key];
+    if (value == null) continue;
+    final text = '$value'.trim();
+    if (text.isNotEmpty) return text;
+  }
+  return null;
+}
+
+int? _recordInt(Map<String, dynamic>? raw, List<String> keys) {
+  if (raw == null) return null;
+  for (final key in keys) {
+    final value = raw[key];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    final parsed = int.tryParse('${value ?? ''}'.trim());
+    if (parsed != null) return parsed;
+  }
+  return null;
+}
+
+List<String> _recordStringList(Map<String, dynamic>? raw, List<String> keys) {
+  if (raw == null) return const [];
+  for (final key in keys) {
+    final value = raw[key];
+    if (value is List) {
+      return value
+          .map((item) => '$item'.trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+  }
+  return const [];
+}
+
 class _StepVm {
-  const _StepVm({required this.key, required this.label, required this.description, required this.status});
+  const _StepVm(
+      {required this.key,
+      required this.label,
+      required this.description,
+      required this.status});
   final String key;
   final String label;
   final String description;
@@ -648,7 +1576,9 @@ class _StepVm {
 }
 
 List<_StepVm> _parseSteps(Map<String, dynamic>? raw) {
-  final source = raw == null ? null : (raw['verificationSteps'] ?? raw['verification_steps']);
+  final source = raw == null
+      ? null
+      : (raw['verificationSteps'] ?? raw['verification_steps']);
   if (source is! List || source.isEmpty) return const [];
   final parsed = <_StepVm>[];
   for (final item in source) {
@@ -673,7 +1603,8 @@ List<_StepVm> _parseSteps(Map<String, dynamic>? raw) {
       ),
     );
   }
-  parsed.sort((a, b) => (_stepOrder[a.key] ?? 99).compareTo(_stepOrder[b.key] ?? 99));
+  parsed.sort(
+      (a, b) => (_stepOrder[a.key] ?? 99).compareTo(_stepOrder[b.key] ?? 99));
   return parsed;
 }
 
@@ -736,7 +1667,8 @@ const Map<String, _StepVm> _stepMeta = {
   'ownership_authorization': _StepVm(
     key: 'ownership_authorization',
     label: 'Ownership Authorization',
-    description: 'Confirm owner-issued authorization to list and market the property.',
+    description:
+        'Confirm owner-issued authorization to list and market the property.',
     status: 'pending',
   ),
   'survey': _StepVm(
@@ -766,7 +1698,8 @@ const Map<String, _StepVm> _stepMeta = {
   'property_document_verification': _StepVm(
     key: 'property_document_verification',
     label: 'Property Document Verification',
-    description: 'Audit title documents (C of O, deed, survey, supporting files).',
+    description:
+        'Audit title documents (C of O, deed, survey, supporting files).',
     status: 'pending',
   ),
 };

@@ -157,6 +157,8 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
         children: [
           const _VerifyHero(),
           const SizedBox(height: 12),
+          const _VerifyProgressStrip(),
+          const SizedBox(height: 12),
           _Card(
             child: verification.when(
               data: (s) {
@@ -448,6 +450,7 @@ class _VerifyHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Card(
+      dark: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -457,12 +460,12 @@ class _VerifyHero extends StatelessWidget {
                 height: 42,
                 width: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
-                  color: _jcHeading,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(width: 10),
@@ -472,7 +475,7 @@ class _VerifyHero extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
-                    color: _jcHeading,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -482,7 +485,7 @@ class _VerifyHero extends StatelessWidget {
           const Text(
             'Verification center',
             style: TextStyle(
-              color: Color(0xFF334155),
+              color: Color(0xFFCBD5E1),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -491,11 +494,77 @@ class _VerifyHero extends StatelessWidget {
             'Complete these checks to unlock listings, chat, and dashboard workflows.',
             style: TextStyle(
               fontSize: 16,
-              color: _jcMuted,
+              color: Color(0xFFE2E8F0),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _VerifyProgressStrip extends StatelessWidget {
+  const _VerifyProgressStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: Row(
+        children: const [
+          Expanded(
+            child: _VerifyMetric(
+              step: '01',
+              label: 'Email',
+            ),
+          ),
+          Expanded(
+            child: _VerifyMetric(
+              step: '02',
+              label: 'Phone',
+            ),
+          ),
+          Expanded(
+            child: _VerifyMetric(
+              step: '03',
+              label: 'Documents',
+            ),
+          ),
+          Expanded(
+            child: _VerifyMetric(
+              step: '04',
+              label: 'KYC',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VerifyMetric extends StatelessWidget {
+  const _VerifyMetric({required this.step, required this.label});
+
+  final String step;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          step,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: _jcHeading,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: _jcMuted),
+        ),
+      ],
     );
   }
 }
@@ -566,18 +635,30 @@ class _Field extends StatelessWidget {
 }
 
 class _Card extends StatelessWidget {
-  const _Card({required this.child});
+  const _Card({required this.child, this.dark = false});
 
   final Widget child;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: dark ? const Color(0xFF0F172A) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _jcPanelBorder),
+        border: Border.all(
+          color: dark ? const Color(0xFF1E293B) : _jcPanelBorder,
+        ),
+        boxShadow: dark
+            ? const [
+                BoxShadow(
+                  color: Color(0x220F172A),
+                  blurRadius: 22,
+                  offset: Offset(0, 10),
+                ),
+              ]
+            : null,
       ),
       child: child,
     );

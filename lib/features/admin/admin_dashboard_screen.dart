@@ -106,7 +106,7 @@ class AdminDashboardScreen extends ConsumerWidget {
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: _AdminHeaderBlock(),
+              child: _AdminHeroShell(),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -235,6 +235,87 @@ class AdminDashboardScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AdminHeroShell extends StatelessWidget {
+  const _AdminHeroShell();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: const [
+        _AdminHeaderBlock(),
+        SizedBox(height: 12),
+        _AdminOpsRibbon(),
+      ],
+    );
+  }
+}
+
+class _AdminOpsRibbon extends StatelessWidget {
+  const _AdminOpsRibbon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: const [
+        Expanded(
+          child: _AdminOpsMetric(
+            label: 'Moderation',
+            value: 'Live controls',
+          ),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: _AdminOpsMetric(
+            label: 'Verifications',
+            value: 'Review queue',
+          ),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: _AdminOpsMetric(
+            label: 'Ops',
+            value: 'Manual runners',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdminOpsMetric extends StatelessWidget {
+  const _AdminOpsMetric({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return _PanelCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: _jcMuted),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: _jcHeading,
+            ),
+          ),
+        ],
       ),
     );
   }
