@@ -20,6 +20,8 @@ class JusticeCityShell extends ConsumerWidget {
     this.backgroundColor = _shellBg,
     this.actions,
     this.floatingActionButton,
+    this.leading,
+    this.leadingWidth,
   });
 
   final String currentPath;
@@ -27,6 +29,8 @@ class JusticeCityShell extends ConsumerWidget {
   final Color backgroundColor;
   final List<Widget>? actions;
   final Widget? floatingActionButton;
+  final Widget? leading;
+  final double? leadingWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,6 +43,8 @@ class JusticeCityShell extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
+        leading: leading,
+        leadingWidth: leadingWidth,
         titleSpacing: 0,
         title: Padding(
           padding: const EdgeInsets.only(left: 12),

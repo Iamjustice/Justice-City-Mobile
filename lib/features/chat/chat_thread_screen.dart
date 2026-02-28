@@ -11,8 +11,8 @@ import '../../domain/models/chat_conversation.dart';
 import '../../domain/models/chat_message.dart';
 import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
+import '../shell/justice_city_shell.dart';
 
-const _jcPageBg = Color(0xFFF4F7FB);
 const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
@@ -128,31 +128,35 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         ? widget.conversation!.subject!.trim()
         : 'Conversation';
 
-    return Scaffold(
-      backgroundColor: _jcPageBg,
-      appBar: AppBar(
-        backgroundColor: _jcPageBg,
-        surfaceTintColor: Colors.transparent,
-        title: const SizedBox(
-          height: 32,
-          child: _BrandWordmark(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.account_balance_wallet_outlined),
-            tooltip: 'Transaction Center',
-            onPressed: () =>
-                context.push('/transaction/${widget.conversationId}'),
-          ),
-          IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh),
-            onPressed: () =>
-                ref.invalidate(chatMessagesProvider(widget.conversationId)),
-          ),
-        ],
+    return JusticeCityShell(
+      currentPath: '/chat',
+      leadingWidth: 56,
+      leading: IconButton(
+        tooltip: 'Back to inbox',
+        icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF475569)),
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/chat');
+          }
+        },
       ),
-      body: Column(
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.account_balance_wallet_outlined),
+          tooltip: 'Transaction Center',
+          onPressed: () =>
+              context.push('/transaction/${widget.conversationId}'),
+        ),
+        IconButton(
+          tooltip: 'Refresh',
+          icon: const Icon(Icons.refresh),
+          onPressed: () =>
+              ref.invalidate(chatMessagesProvider(widget.conversationId)),
+        ),
+      ],
+      child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -441,28 +445,6 @@ class _ThreadHeroCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _BrandWordmark extends StatelessWidget {
-  const _BrandWordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/logo.png',
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => const Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'JUSTICE CITY',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: _jcHeading,
-          ),
-        ),
       ),
     );
   }

@@ -2,13 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../state/me_provider.dart';
 import '../../state/transaction_providers.dart';
 import '../../domain/models/chat_action.dart';
 import '../../domain/models/transaction.dart';
+import '../shell/justice_city_shell.dart';
 
-const _txPageBg = Color(0xFFF4F7FB);
 const _txPanelBorder = Color(0xFFE2E8F0);
 const _txHeading = Color(0xFF0F172A);
 const _txMuted = Color(0xFF64748B);
@@ -42,14 +43,30 @@ class _TransactionCenterScreenState
     final txAsync =
         ref.watch(transactionByConversationProvider(widget.conversationId));
 
-    return Scaffold(
-      backgroundColor: _txPageBg,
-      appBar: AppBar(
-        backgroundColor: _txPageBg,
-        surfaceTintColor: Colors.transparent,
-        title: const Text('Transaction & Escrow'),
+    return JusticeCityShell(
+      currentPath: '/chat',
+      leadingWidth: 56,
+      leading: IconButton(
+        tooltip: 'Back to conversation',
+        icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF475569)),
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/chat/${widget.conversationId}');
+          }
+        },
       ),
-      body: txAsync.when(
+      actions: [
+        IconButton(
+          tooltip: 'Refresh',
+          icon: const Icon(Icons.refresh),
+          onPressed: () {
+            ref.invalidate(transactionByConversationProvider(widget.conversationId));
+          },
+        ),
+      ],
+      child: txAsync.when(
         data: (tx) => _Body(
           conversationId: widget.conversationId,
           tx: tx,
@@ -108,9 +125,10 @@ class _Body extends ConsumerWidget {
     final canSubmitRatings = userRole == 'buyer' || userRole == 'renter';
 
     if (tx == null) {
-      return Padding(
+      return ListView(
         padding: const EdgeInsets.all(20),
-        child: Column(
+        children: [
+          Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const _TransactionHeroHeader(
@@ -146,6 +164,9 @@ class _Body extends ConsumerWidget {
             ),
           ],
         ),
+          const SizedBox(height: 12),
+          const JusticeCityFooter(),
+        ],
       );
     }
 
@@ -372,7 +393,9 @@ class _Body extends ConsumerWidget {
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Refresh'),
-          )
+          ),
+          const SizedBox(height: 12),
+          const JusticeCityFooter(),
         ],
       ),
     );
