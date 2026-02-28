@@ -7,8 +7,8 @@ import '../../state/me_provider.dart';
 import '../../state/session_provider.dart';
 import '../../state/repositories_providers.dart';
 import '../../state/services_providers.dart';
+import '../shell/justice_city_shell.dart';
 
-const _jcPageBg = Color(0xFFF4F7FB);
 const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
@@ -20,38 +20,33 @@ class ServicesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final offerings = ref.watch(serviceOfferingsProvider);
 
-    return Scaffold(
-      backgroundColor: _jcPageBg,
-      appBar: AppBar(
-        backgroundColor: _jcPageBg,
-        surfaceTintColor: Colors.transparent,
-        title: const SizedBox(
-          height: 32,
-          child: _BrandWordmark(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh services',
-            onPressed: () => ref.invalidate(serviceOfferingsProvider),
-          ),
-          IconButton(
-            icon: const Icon(Icons.link),
-            tooltip: 'Open provider package',
-            onPressed: () async {
-              final token = await _promptToken(context);
-              if (token != null && token.isNotEmpty) {
-                if (!context.mounted) return;
-                context.go('/provider-package/${Uri.encodeComponent(token)}');
-              }
-            },
-          ),
-        ],
-      ),
-      body: offerings.when(
+    return JusticeCityShell(
+      currentPath: '/services',
+      child: offerings.when(
         data: (items) => ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: 'Refresh services',
+                  onPressed: () => ref.invalidate(serviceOfferingsProvider),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.link),
+                  tooltip: 'Open provider package',
+                  onPressed: () async {
+                    final token = await _promptToken(context);
+                    if (token != null && token.isNotEmpty) {
+                      if (!context.mounted) return;
+                      context.go('/provider-package/${Uri.encodeComponent(token)}');
+                    }
+                  },
+                ),
+              ],
+            ),
             const _ServicesHeroCard(),
             const SizedBox(height: 12),
             if (items.isEmpty)
@@ -80,6 +75,7 @@ class ServicesScreen extends ConsumerWidget {
                 style: TextStyle(color: _jcMuted),
               ),
             ),
+            const JusticeCityFooter(),
           ],
         ),
         loading: () => ListView(
@@ -100,6 +96,7 @@ class ServicesScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            JusticeCityFooter(),
           ],
         ),
         error: (e, _) => ListView(
@@ -110,6 +107,7 @@ class ServicesScreen extends ConsumerWidget {
             _ShellCard(
               child: Text('Failed to load offerings: $e'),
             ),
+            const JusticeCityFooter(),
           ],
         ),
       ),
@@ -469,28 +467,6 @@ class _EmptyStateCard extends StatelessWidget {
       child: Text(
         message,
         style: const TextStyle(color: _jcMuted),
-      ),
-    );
-  }
-}
-
-class _BrandWordmark extends StatelessWidget {
-  const _BrandWordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/logo.png',
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => const Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'JUSTICE CITY',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: _jcHeading,
-          ),
-        ),
       ),
     );
   }

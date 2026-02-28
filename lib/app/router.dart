@@ -39,12 +39,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = loc == '/auth' || isWelcomeRoute || isSignInRoute;
       final isVerifyRoute = loc == '/verify';
       final isAdminRoute = loc == '/admin';
-      final isListingRoute = loc == '/listings' || loc.startsWith('/property/');
+      final isListingsConsoleRoute = loc == '/listings';
       final isPublicAuthRoute =
           loc == '/' ||
           loc == '/home' ||
           loc == '/services' ||
           loc == '/hiring' ||
+          loc.startsWith('/property/') ||
           loc == '/request-callback' ||
           loc == '/schedule-tour' ||
           loc == '/terms-of-service' ||
@@ -71,8 +72,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      // Listings route gate (operator roles only for current mobile APIs).
-      if (signedIn && isListingRoute) {
+      // Listings console route gate (operator roles only for current mobile APIs).
+      if (signedIn && isListingsConsoleRoute) {
         final me = ref.read(meProvider);
         return me.maybeWhen(
           data: (u) {

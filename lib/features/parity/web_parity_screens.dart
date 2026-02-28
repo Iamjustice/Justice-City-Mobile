@@ -9,8 +9,8 @@ import '../../state/me_provider.dart';
 import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
 import '../../state/verification_provider.dart';
+import '../shell/justice_city_shell.dart';
 
-const _jcPageBg = Color(0xFFF4F7FB);
 const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
@@ -58,6 +58,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final meAsync = ref.watch(meProvider);
 
     return _ParityScaffold(
+      currentPath: '/profile',
       title: 'Profile',
       subtitle: 'Personal information, identity details, and account records.',
       body: meAsync.when(
@@ -291,6 +292,7 @@ class _RequestCallbackScreenState extends ConsumerState<RequestCallbackScreen> {
   @override
   Widget build(BuildContext context) {
     return _ParityScaffold(
+      currentPath: '/request-callback',
       title: 'Request Callback',
       subtitle: 'Ask support to call you and continue the request in chat.',
       body: Column(
@@ -412,6 +414,7 @@ class _ScheduleTourScreenState extends ConsumerState<ScheduleTourScreen> {
     final selectedTime = _time == null ? 'Select time' : _time!.format(context);
 
     return _ParityScaffold(
+      currentPath: '/schedule-tour',
       title: 'Schedule Tour',
       subtitle:
           'Book a property inspection and route details into support chat.',
@@ -591,6 +594,7 @@ class _HiringScreenState extends ConsumerState<HiringScreen> {
     }
 
     return _ParityScaffold(
+      currentPath: '/hiring',
       title: 'Hiring Application',
       subtitle: 'Professional partner onboarding for field service delivery.',
       body: Column(
@@ -832,6 +836,7 @@ class _PolicyScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ParityScaffold(
+      currentPath: '/terms-of-service',
       title: title,
       subtitle:
           'Policy reference for Justice City platform usage and compliance.',
@@ -878,33 +883,29 @@ class _PolicyScaffold extends StatelessWidget {
 
 class _ParityScaffold extends StatelessWidget {
   const _ParityScaffold({
+    required this.currentPath,
     required this.title,
     required this.subtitle,
     required this.body,
   });
 
+  final String currentPath;
   final String title;
   final String subtitle;
   final Widget body;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _jcPageBg,
-      appBar: AppBar(
-        backgroundColor: _jcPageBg,
-        surfaceTintColor: Colors.transparent,
-        title: const SizedBox(
-          height: 32,
-          child: _BrandWordmark(),
-        ),
-      ),
-      body: ListView(
+    return JusticeCityShell(
+      currentPath: currentPath,
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         children: [
           _ParityHeroCard(title: title, subtitle: subtitle),
           const SizedBox(height: 12),
           body,
+          const SizedBox(height: 12),
+          const JusticeCityFooter(),
         ],
       ),
     );
@@ -1189,28 +1190,6 @@ class _ParityMetric extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _BrandWordmark extends StatelessWidget {
-  const _BrandWordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/logo.png',
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => const Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'JUSTICE CITY',
-          style: TextStyle(
-            color: _jcHeading,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
       ),
     );
   }
