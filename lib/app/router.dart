@@ -93,6 +93,14 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         final verification = ref.read(verificationStatusProvider);
 
+        if (isVerifyRoute) {
+          return verification.when(
+            data: (s) => (s?.isVerified == true) ? '/home' : null,
+            loading: () => null,
+            error: (_, __) => null,
+          );
+        }
+
         final isPublicRoute = isPublicAuthRoute || isVerifyRoute;
         if (!isPublicRoute) {
           return verification.when(

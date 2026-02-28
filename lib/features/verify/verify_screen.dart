@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mime/mime.dart';
 
 import '../../state/session_provider.dart';
@@ -125,6 +126,10 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
     final verification = ref.watch(verificationStatusProvider);
+    final isVerified = verification.maybeWhen(
+      data: (s) => s?.isVerified == true,
+      orElse: () => false,
+    );
 
     final userId = session?.userId ?? '';
     final userEmail = session?.email;
@@ -169,7 +174,6 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                   );
                 }
                 final status = s.latestStatus ?? 'unknown';
-                final provider = s.latestProvider ?? 'unknown';
                 final updated =
                     s.latestUpdatedAt?.toLocal().toString() ?? 'unknown';
                 return Column(
@@ -194,7 +198,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text('Latest check: $status ($provider)',
+                    Text('Latest check: ${_formatVerificationStatus(status)}',
                         style: const TextStyle(color: _jcMuted)),
                     const SizedBox(height: 4),
                     Text('Updated: $updated',
@@ -204,10 +208,19 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                       Text('Message: ${s.latestMessage}'),
                     ],
                     const SizedBox(height: 8),
-                    const Text(
-                      'Complete all steps below. The system updates your access automatically after approval.',
-                      style: TextStyle(color: _jcMuted),
+                    Text(
+                      s.isVerified
+                          ? 'Verification is complete. You can continue to the main app.'
+                          : 'Complete all steps below. The system updates your access automatically after approval.',
+                      style: const TextStyle(color: _jcMuted),
                     ),
+                    if (s.isVerified) ...[
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: () => context.go('/home'),
+                        child: const Text('Continue to app'),
+                      ),
+                    ],
                   ],
                 );
               },
@@ -225,211 +238,213 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
               error: (e, _) => Text('Failed to load status: $e'),
             ),
           ),
-          const SizedBox(height: 12),
-          _StepCard(
-            title: 'Step 1 - Email OTP',
-            subtitle: 'Confirm your email ownership.',
-            child: Column(
-              children: [
-                _Field(_emailController, label: 'Email'),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: (_busy || userId.isEmpty)
-                            ? null
-                            : () => _run(() async {
-                                  final email = _emailController.text.trim();
-                                  if (email.isEmpty) {
-                                    _toast('Enter your email');
-                                    return;
-                                  }
-                                  await ref
-                                      .read(verificationRepositoryProvider)
-                                      .sendEmailOtp(email: email);
-                                  _toast('Email code sent (if allowed).');
-                                }),
-                        child: const Text('Send code'),
+          if (!isVerified) ...[
+            const SizedBox(height: 12),
+            _StepCard(
+              title: 'Step 1 - Email OTP',
+              subtitle: 'Confirm your email ownership.',
+              child: Column(
+                children: [
+                  _Field(_emailController, label: 'Email'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: (_busy || userId.isEmpty)
+                              ? null
+                              : () => _run(() async {
+                                    final email = _emailController.text.trim();
+                                    if (email.isEmpty) {
+                                      _toast('Enter your email');
+                                      return;
+                                    }
+                                    await ref
+                                        .read(verificationRepositoryProvider)
+                                        .sendEmailOtp(email: email);
+                                    _toast('Email code sent (if allowed).');
+                                  }),
+                          child: const Text('Send code'),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: (_busy || userId.isEmpty)
-                            ? null
-                            : () => _run(() async {
-                                  final email = _emailController.text.trim();
-                                  final code = _emailCodeController.text.trim();
-                                  if (email.isEmpty || code.isEmpty) {
-                                    _toast('Enter email + code');
-                                    return;
-                                  }
-                                  await ref
-                                      .read(verificationRepositoryProvider)
-                                      .checkEmailOtp(
-                                        email: email,
-                                        code: code,
-                                        userId: userId,
-                                      );
-                                  _toast('Email verified (if code was valid).');
-                                  await ref
-                                      .read(verificationStatusProvider.notifier)
-                                      .refresh();
-                                }),
-                        child: const Text('Verify'),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: (_busy || userId.isEmpty)
+                              ? null
+                              : () => _run(() async {
+                                    final email = _emailController.text.trim();
+                                    final code = _emailCodeController.text.trim();
+                                    if (email.isEmpty || code.isEmpty) {
+                                      _toast('Enter email + code');
+                                      return;
+                                    }
+                                    await ref
+                                        .read(verificationRepositoryProvider)
+                                        .checkEmailOtp(
+                                          email: email,
+                                          code: code,
+                                          userId: userId,
+                                        );
+                                    _toast('Email verified (if code was valid).');
+                                    await ref
+                                        .read(verificationStatusProvider.notifier)
+                                        .refresh();
+                                  }),
+                          child: const Text('Verify'),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                _Field(_emailCodeController, label: 'Email code'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _StepCard(
-            title: 'Step 2 - Phone OTP',
-            subtitle: 'Confirm your active phone number.',
-            child: Column(
-              children: [
-                _Field(
-                  _phoneController,
-                  label: 'Phone (E.164 e.g. +2349012345678)',
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: (_busy || userId.isEmpty)
-                            ? null
-                            : () => _run(() async {
-                                  final phone = _phoneController.text.trim();
-                                  if (phone.isEmpty) {
-                                    _toast('Enter your phone in E.164 format');
-                                    return;
-                                  }
-                                  await ref
-                                      .read(verificationRepositoryProvider)
-                                      .sendPhoneOtp(phone: phone);
-                                  _toast('SMS code sent (if allowed).');
-                                }),
-                        child: const Text('Send code'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: (_busy || userId.isEmpty)
-                            ? null
-                            : () => _run(() async {
-                                  final phone = _phoneController.text.trim();
-                                  final code = _phoneCodeController.text.trim();
-                                  if (phone.isEmpty || code.isEmpty) {
-                                    _toast('Enter phone + code');
-                                    return;
-                                  }
-                                  await ref
-                                      .read(verificationRepositoryProvider)
-                                      .checkPhoneOtp(
-                                        phone: phone,
-                                        code: code,
-                                        userId: userId,
-                                      );
-                                  _toast('Phone verified (if code was valid).');
-                                  await ref
-                                      .read(verificationStatusProvider.notifier)
-                                      .refresh();
-                                }),
-                        child: const Text('Verify'),
-                      ),
-                    ),
-                  ],
-                ),
-                _Field(_phoneCodeController, label: 'SMS code'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _StepCard(
-            title: 'Step 3 - Address + Documents',
-            subtitle: 'Submit address and supporting identity records.',
-            child: Column(
-              children: [
-                _Field(_homeAddressController,
-                    label: 'Home address (required)'),
-                _Field(_officeAddressController,
-                    label: 'Office address (optional)'),
-                _Field(_dobController,
-                    label: 'Date of birth (YYYY-MM-DD, optional)'),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: (_busy || userId.isEmpty)
-                            ? null
-                            : () => _run(() async {
-                                  await _pickAndUploadDocument(
-                                    userId: userId,
-                                    documentType: 'identity',
-                                    successLabel: 'Identity document',
-                                  );
-                                }),
-                        icon: const Icon(Icons.badge_outlined),
-                        label: const Text('Upload ID'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: (_busy || userId.isEmpty)
-                            ? null
-                            : () => _run(() async {
-                                  await _pickAndUploadDocument(
-                                    userId: userId,
-                                    documentType: 'utility_bill',
-                                    successLabel: 'Utility bill',
-                                  );
-                                }),
-                        icon: const Icon(Icons.receipt_long_outlined),
-                        label: const Text('Upload Utility Bill'),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_uploadedIdentityFileName != null ||
-                    _uploadedUtilityBillFileName != null) ...[
-                  const SizedBox(height: 10),
-                  if (_uploadedIdentityFileName != null)
-                    _UploadChip(label: 'ID: $_uploadedIdentityFileName'),
-                  if (_uploadedUtilityBillFileName != null)
-                    _UploadChip(
-                        label: 'Utility bill: $_uploadedUtilityBillFileName'),
+                    ],
+                  ),
+                  _Field(_emailCodeController, label: 'Email code'),
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          _StepCard(
-            title: 'Step 4 - Smile ID Submission',
-            subtitle: 'Finalize KYC processing with provider submission.',
-            child: FilledButton.icon(
-              onPressed: (_busy || userId.isEmpty)
-                  ? null
-                  : () => _run(() async {
-                        await ref
-                            .read(verificationRepositoryProvider)
-                            .submitSmileId(userId: userId, mode: 'kyc');
-                        _toast(
-                          'Submitted to Smile ID (or mock). Refresh status in a moment.',
-                        );
-                        await ref
-                            .read(verificationStatusProvider.notifier)
-                            .refresh();
-                      }),
-              icon: const Icon(Icons.verified_user_outlined),
-              label: const Text('Submit Smile ID (KYC)'),
+            const SizedBox(height: 12),
+            _StepCard(
+              title: 'Step 2 - Phone OTP',
+              subtitle: 'Confirm your active phone number.',
+              child: Column(
+                children: [
+                  _Field(
+                    _phoneController,
+                    label: 'Phone (E.164 e.g. +2349012345678)',
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: (_busy || userId.isEmpty)
+                              ? null
+                              : () => _run(() async {
+                                    final phone = _phoneController.text.trim();
+                                    if (phone.isEmpty) {
+                                      _toast('Enter your phone in E.164 format');
+                                      return;
+                                    }
+                                    await ref
+                                        .read(verificationRepositoryProvider)
+                                        .sendPhoneOtp(phone: phone);
+                                    _toast('SMS code sent (if allowed).');
+                                  }),
+                          child: const Text('Send code'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: (_busy || userId.isEmpty)
+                              ? null
+                              : () => _run(() async {
+                                    final phone = _phoneController.text.trim();
+                                    final code = _phoneCodeController.text.trim();
+                                    if (phone.isEmpty || code.isEmpty) {
+                                      _toast('Enter phone + code');
+                                      return;
+                                    }
+                                    await ref
+                                        .read(verificationRepositoryProvider)
+                                        .checkPhoneOtp(
+                                          phone: phone,
+                                          code: code,
+                                          userId: userId,
+                                        );
+                                    _toast('Phone verified (if code was valid).');
+                                    await ref
+                                        .read(verificationStatusProvider.notifier)
+                                        .refresh();
+                                  }),
+                          child: const Text('Verify'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  _Field(_phoneCodeController, label: 'SMS code'),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+            _StepCard(
+              title: 'Step 3 - Address + Documents',
+              subtitle: 'Submit address and supporting identity records.',
+              child: Column(
+                children: [
+                  _Field(_homeAddressController,
+                      label: 'Home address (required)'),
+                  _Field(_officeAddressController,
+                      label: 'Office address (optional)'),
+                  _Field(_dobController,
+                      label: 'Date of birth (YYYY-MM-DD, optional)'),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: (_busy || userId.isEmpty)
+                              ? null
+                              : () => _run(() async {
+                                    await _pickAndUploadDocument(
+                                      userId: userId,
+                                      documentType: 'identity',
+                                      successLabel: 'Identity document',
+                                    );
+                                  }),
+                          icon: const Icon(Icons.badge_outlined),
+                          label: const Text('Upload ID'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: (_busy || userId.isEmpty)
+                              ? null
+                              : () => _run(() async {
+                                    await _pickAndUploadDocument(
+                                      userId: userId,
+                                      documentType: 'utility_bill',
+                                      successLabel: 'Utility bill',
+                                    );
+                                  }),
+                          icon: const Icon(Icons.receipt_long_outlined),
+                          label: const Text('Upload Utility Bill'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_uploadedIdentityFileName != null ||
+                      _uploadedUtilityBillFileName != null) ...[
+                    const SizedBox(height: 10),
+                    if (_uploadedIdentityFileName != null)
+                      _UploadChip(label: 'ID: $_uploadedIdentityFileName'),
+                    if (_uploadedUtilityBillFileName != null)
+                      _UploadChip(
+                          label: 'Utility bill: $_uploadedUtilityBillFileName'),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _StepCard(
+              title: 'Step 4 - Smile ID Submission',
+              subtitle: 'Finalize KYC processing with provider submission.',
+              child: FilledButton.icon(
+                onPressed: (_busy || userId.isEmpty)
+                    ? null
+                    : () => _run(() async {
+                          await ref
+                              .read(verificationRepositoryProvider)
+                              .submitSmileId(userId: userId, mode: 'kyc');
+                          _toast(
+                            'Submitted for verification. Refresh status in a moment.',
+                          );
+                          await ref
+                              .read(verificationStatusProvider.notifier)
+                              .refresh();
+                        }),
+                icon: const Icon(Icons.verified_user_outlined),
+                label: const Text('Submit Smile ID (KYC)'),
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           const _Card(
             child: Text(
@@ -442,6 +457,13 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
       ),
     );
   }
+}
+
+String _formatVerificationStatus(String status) {
+  if (status.isEmpty) return 'Unknown';
+  final normalized = status.replaceAll('_', ' ').trim();
+  if (normalized.isEmpty) return 'Unknown';
+  return normalized[0].toUpperCase() + normalized.substring(1);
 }
 
 class _VerifyHero extends StatelessWidget {
