@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/auth_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/marketplace/marketplace_property_details_screen.dart';
 import '../features/listings/listings_screen.dart';
 import '../features/listings/listing_details_screen.dart';
 import '../features/chat/chat_screen.dart';
@@ -192,6 +193,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id'] ?? '';
           final openVerification =
               state.uri.queryParameters['view'] == 'verification';
+          if (id.startsWith('prop_')) {
+            return MarketplacePropertyDetailsScreen(propertyId: id);
+          }
           return ListingDetailsScreen(
             listingId: id,
             initial: state.extra is Listing ? state.extra as Listing : null,
