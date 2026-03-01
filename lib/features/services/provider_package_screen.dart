@@ -173,8 +173,6 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
       ),
       body: pkgAsync.when(
         data: (pkg) {
-          final payloadPretty =
-              const JsonEncoder.withIndent('  ').convert(pkg.payload);
           final conversationId = pkg.conversationId;
           final role = _resolvedRole();
           final canCreateLinks = _canCreateLinks(role);
@@ -249,10 +247,30 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const _SectionTitle('Payload'),
-              const SizedBox(height: 8),
               _PanelCard(
-                child: SelectableText(payloadPretty),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Package Access',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      pkg.payload.isEmpty
+                          ? 'This provider package is active and ready for secure document sharing.'
+                          : 'This provider package contains secure workflow metadata used by Justice City services. Raw payload data is hidden from the user interface.',
+                      style: const TextStyle(
+                        color: _jcMuted,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               const _SectionTitle('Attachments'),
