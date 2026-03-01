@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -84,17 +82,17 @@ class AdminDashboardScreen extends ConsumerWidget {
               ref.invalidate(adminServicePdfJobsProvider);
             },
           ),
+          IconButton(
+            tooltip: 'Conversations',
+            icon: const Icon(Icons.forum_outlined),
+            onPressed: () => _openAdminConversations(context, ref),
+          ),
         ],
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _openAdminConversations(context, ref),
-          icon: const Icon(Icons.forum),
-          label: const Text('Conversations'),
-        ),
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: _AdminHeroShell(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: _AdminHeroShell(dashboardAsync: dashboardAsync),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -105,7 +103,10 @@ class AdminDashboardScreen extends ConsumerWidget {
                   border: Border.all(color: _jcPanelBorder),
                 ),
                 child: const TabBar(
+                  isScrollable: true,
                   padding: EdgeInsets.all(4),
+                  tabAlignment: TabAlignment.start,
+                  labelPadding: EdgeInsets.symmetric(horizontal: 18),
                   labelColor: Color(0xFF0F172A),
                   unselectedLabelColor: Color(0xFF64748B),
                   indicatorColor: Color(0xFF2563EB),
@@ -224,15 +225,28 @@ class AdminDashboardScreen extends ConsumerWidget {
 }
 
 class _AdminHeroShell extends StatelessWidget {
-  const _AdminHeroShell();
+  const _AdminHeroShell({required this.dashboardAsync});
+
+  final AsyncValue<Map<String, dynamic>> dashboardAsync;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final commissionRate = dashboardAsync.maybeWhen(
+      data: (data) {
+        final overview =
+            (data['overview'] is Map) ? (data['overview'] as Map) : const {};
+        final raw = overview['commissionRate'] ?? overview['commission_rate'];
+        if (raw == null) return '5.0';
+        return raw.toString();
+      },
+      orElse: () => '5.0',
+    );
+
+    return Column(
       children: [
-        _AdminHeaderBlock(),
-        SizedBox(height: 12),
-        _AdminOpsRibbon(),
+        _AdminHeaderBlock(commissionRate: commissionRate),
+        const SizedBox(height: 12),
+        const _AdminOpsRibbon(),
       ],
     );
   }
@@ -330,12 +344,16 @@ class _OverviewTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
+            GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.15,
+              physics: const NeverScrollableScrollPhysics(),
               children: [
                 _StatCard(title: 'Total Users', value: '$totalUsers'),
-                _StatCard(title: 'Pending Verifications', value: '$pending'),
+                _StatCard(title: 'Pending Review', value: '$pending'),
                 _StatCard(title: 'Flagged Listings', value: '$flagged'),
                 _StatCard(title: 'Commission Rate', value: '$commissionRate'),
               ],
@@ -343,21 +361,54 @@ class _OverviewTab extends StatelessWidget {
             if (revenueLabel.toString().isNotEmpty) ...[
               const SizedBox(height: 12),
               _PanelCard(
-                child: Text('Revenue label: $revenueLabel'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Revenue Snapshot',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      revenueLabel.toString(),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Latest reported monthly revenue.',
+                      style: TextStyle(color: _jcMuted),
+                    ),
+                  ],
+                ),
               ),
             ],
-            const SizedBox(height: 16),
-            const Text(
-              'Raw (debug)',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: _jcHeading,
+            const _PanelCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Control Center',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _jcHeading,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Use the tabs above to review verification queues, flagged listings, hiring requests, disputes, and manual PDF job runners.',
+                    style: TextStyle(color: _jcMuted),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 6),
-            _PanelCard(
-              child: Text(const JsonEncoder.withIndent('  ').convert(data)),
             ),
           ],
         );
@@ -1298,15 +1349,21 @@ class _StatCard extends StatelessWidget {
 }
 
 class _AdminHeaderBlock extends StatelessWidget {
-  const _AdminHeaderBlock();
+  const _AdminHeaderBlock({required this.commissionRate});
+
+  final String commissionRate;
 
   @override
   Widget build(BuildContext context) {
     return _PanelCard(
       padding: const EdgeInsets.all(24),
-      child: Row(
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          const Expanded(
+          const SizedBox(
+            width: 280,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1321,7 +1378,38 @@ class _AdminHeaderBlock extends StatelessWidget {
                 SizedBox(height: 4),
                 Text(
                   'System-wide overview and verification management.',
-                  style: TextStyle(fontSize: 16, color: _jcMuted),
+                  style: TextStyle(fontSize: 16, color: _jcMuted, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'PLATFORM COMMISSION',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${commissionRate.replaceAll('%', '')}%',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1E3A8A),
+                  ),
                 ),
               ],
             ),
@@ -1329,32 +1417,17 @@ class _AdminHeaderBlock extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: const Color(0xFFFECACA)),
             ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'SYSTEM STATUS',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1D4ED8),
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Live',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E3A8A),
-                  ),
-                ),
-              ],
+            child: const Text(
+              'System Live',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFB91C1C),
+              ),
             ),
           ),
         ],

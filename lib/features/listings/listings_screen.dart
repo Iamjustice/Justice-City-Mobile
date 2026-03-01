@@ -636,168 +636,17 @@ class _ListingsScreenState extends ConsumerState<ListingsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(_jcRadius),
-                  border: Border.all(color: _jcPanelBorder),
-                ),
-                child: Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 14, 16, 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 6,
-                            child: Text(
-                              'Property',
-                              style: TextStyle(
-                                color: _jcMuted,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              'Status',
-                              style: TextStyle(
-                                color: _jcMuted,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              'Price',
-                              style: TextStyle(
-                                color: _jcMuted,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              'Date',
-                              style: TextStyle(
-                                color: _jcMuted,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 38),
-                        ],
-                      ),
+              ...items.map((l) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _ListingMobileCard(
+                      listing: l,
+                      dateLabel: _formatRowDate(l),
+                      busy: _isBusy(l.id),
+                      menuBuilder: () =>
+                          _buildActionMenuItems(listing: l, me: me),
+                      onSelected: (value) => _onActionSelected(value, l),
                     ),
-                    const Divider(height: 1),
-                    ...items.map((l) {
-                      return InkWell(
-                        onTap: () => context.go('/property/${l.id}', extra: l),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 6,
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: const Color(0xFFE2E8F0),
-                                      ),
-                                      child:
-                                          const Icon(Icons.home_work_outlined),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            l.title,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              color: _jcHeading,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            'ID: ${l.id}',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: _jcMuted,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child:
-                                    _ListingStatusChip(status: l.status ?? '-'),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  l.price ?? '-',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: _jcHeading,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  _formatRowDate(l),
-                                  style: const TextStyle(
-                                    color: _jcMuted,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                              if (_isBusy(l.id))
-                                const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              else
-                                PopupMenuButton<_ListingRowAction>(
-                                  onSelected: (value) =>
-                                      _onActionSelected(value, l),
-                                  itemBuilder: (_) =>
-                                      _buildActionMenuItems(listing: l, me: me),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
+                  )),
               const SizedBox(height: 12),
               const JusticeCityFooter(),
             ],
@@ -861,33 +710,230 @@ class _ListingsHeaderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(_jcRadius),
         border: Border.all(color: _jcPanelBorder),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Recent Listings',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: _jcHeading,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Create, edit, and manage listings with verification workflow actions.',
-                  style: TextStyle(fontSize: 16, color: _jcMuted),
-                ),
-              ],
+          const Text(
+            'Recent Listings',
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(height: 4),
+          const Text(
+            'Create, edit, and manage listings with verification workflow actions.',
+            style: TextStyle(fontSize: 16, color: _jcMuted),
+          ),
+          const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: canCreate ? onCreate : null,
             icon: const Icon(Icons.add),
             label: const Text('Create New Listing'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ListingMobileCard extends StatelessWidget {
+  const _ListingMobileCard({
+    required this.listing,
+    required this.dateLabel,
+    required this.busy,
+    required this.menuBuilder,
+    required this.onSelected,
+  });
+
+  final Listing listing;
+  final String dateLabel;
+  final bool busy;
+  final List<PopupMenuEntry<_ListingRowAction>> Function() menuBuilder;
+  final ValueChanged<_ListingRowAction> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_jcRadius),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: InkWell(
+        onTap: () => context.go('/property/${listing.id}', extra: listing),
+        borderRadius: BorderRadius.circular(_jcRadius),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: const Color(0xFFE2E8F0),
+                    ),
+                    child: const Icon(Icons.home_work_outlined),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          listing.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: _jcHeading,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          listing.location ?? '-',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _jcMuted,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'ID: ${listing.id}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _jcMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (busy)
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    PopupMenuButton<_ListingRowAction>(
+                      onSelected: onSelected,
+                      itemBuilder: (_) => menuBuilder(),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _ListingStatusChip(status: listing.status ?? '-'),
+                  _ListingMetaBadge(
+                    icon: Icons.sell_outlined,
+                    label: listing.listingType ?? '-',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ListingFact(
+                      label: 'Price',
+                      value: listing.price ?? '-',
+                    ),
+                  ),
+                  Expanded(
+                    child: _ListingFact(
+                      label: 'Date Added',
+                      value: dateLabel,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ListingFact extends StatelessWidget {
+  const _ListingFact({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: _jcMuted,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            color: _jcHeading,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ListingMetaBadge extends StatelessWidget {
+  const _ListingMetaBadge({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: _jcMuted),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: _jcMuted,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
           ),
         ],
       ),

@@ -161,6 +161,9 @@ class _AdminDashboard extends ConsumerWidget {
                       border: Border.all(color: _jcPanelBorder),
                     ),
                     child: const TabBar(
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      labelPadding: EdgeInsets.symmetric(horizontal: 18),
                       padding: EdgeInsets.all(4),
                       labelColor: Color(0xFF0F172A),
                       unselectedLabelColor: Color(0xFF64748B),
@@ -270,6 +273,9 @@ class _AgentDashboard extends ConsumerWidget {
                       border: Border.all(color: _jcPanelBorder),
                     ),
                     child: const TabBar(
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      labelPadding: EdgeInsets.symmetric(horizontal: 18),
                       padding: EdgeInsets.all(4),
                       labelColor: Color(0xFF0F172A),
                       unselectedLabelColor: Color(0xFF64748B),
@@ -451,6 +457,9 @@ class _OwnerDashboard extends ConsumerWidget {
                       border: Border.all(color: _jcPanelBorder),
                     ),
                     child: const TabBar(
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      labelPadding: EdgeInsets.symmetric(horizontal: 18),
                       padding: EdgeInsets.all(4),
                       labelColor: Color(0xFF0F172A),
                       unselectedLabelColor: Color(0xFF64748B),
@@ -686,39 +695,65 @@ class _ConsoleHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              color: _jcHeading,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 16, color: _jcMuted),
-          ),
-          const SizedBox(height: 10),
-          Row(
+          Wrap(
+            spacing: 14,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              CircleAvatar(
-                radius: 17,
-                backgroundColor: const Color(0xFFE2E8F0),
-                child: Text(
-                  displayName.isEmpty ? 'U' : displayName[0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Color(0xFF0F172A),
-                    fontWeight: FontWeight.w700,
-                  ),
+              SizedBox(
+                width: 260,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: _jcMuted,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                '$displayName - ${role[0].toUpperCase()}${role.substring(1)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF334155),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _jcPanelBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      role.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

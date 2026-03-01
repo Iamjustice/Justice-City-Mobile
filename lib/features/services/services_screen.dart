@@ -26,27 +26,6 @@ class ServicesScreen extends ConsumerWidget {
         data: (items) => ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  tooltip: 'Refresh services',
-                  onPressed: () => ref.invalidate(serviceOfferingsProvider),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.link),
-                  tooltip: 'Open provider package',
-                  onPressed: () async {
-                    final token = await _promptToken(context);
-                    if (token != null && token.isNotEmpty) {
-                      if (!context.mounted) return;
-                      context.go('/provider-package/${Uri.encodeComponent(token)}');
-                    }
-                  },
-                ),
-              ],
-            ),
             const _ServicesHeroCard(),
             const SizedBox(height: 12),
             if (items.isEmpty)
@@ -56,25 +35,51 @@ class ServicesScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _ServiceOfferingCard(
                   offering: s,
-                  onStartChat: () => _startServiceChat(context, ref, s),
-                  onOpenPackage: () async {
-                    final token = await _promptToken(context);
-                    if (token != null && token.isNotEmpty) {
-                      if (!context.mounted) return;
-                      context.go(
-                          '/provider-package/${Uri.encodeComponent(token)}');
-                    }
-                  },
+                  onBook: () => _startServiceChat(context, ref, s),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            const _ShellCard(
-              child: Text(
-                'Service chats and provider packages are synchronized with your web dashboard.',
-                style: TextStyle(color: _jcMuted),
+            const SizedBox(height: 16),
+            _ShellCard(
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Already have a provider package?',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: _jcHeading,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Open a secure provider package token from support.',
+                          style: TextStyle(color: _jcMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final token = await _promptToken(context);
+                      if (token != null && token.isNotEmpty) {
+                        if (!context.mounted) return;
+                        context.go('/provider-package/${Uri.encodeComponent(token)}');
+                      }
+                    },
+                    icon: const Icon(Icons.link),
+                    label: const Text('Open'),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 16),
+            const _QualityGuaranteeCard(),
             const JusticeCityFooter(),
           ],
         ),
@@ -107,6 +112,8 @@ class ServicesScreen extends ConsumerWidget {
             _ShellCard(
               child: Text('Failed to load offerings: $e'),
             ),
+            const SizedBox(height: 16),
+            const _QualityGuaranteeCard(),
             const JusticeCityFooter(),
           ],
         ),
@@ -259,17 +266,18 @@ class _ServicesHeroCard extends StatelessWidget {
           Text(
             'Professional Services',
             style: TextStyle(
-              fontSize: 30,
+              fontSize: 32,
               fontWeight: FontWeight.w800,
               color: _jcHeading,
             ),
           ),
           SizedBox(height: 4),
           Text(
-            'Land surveying, valuation, verification, snagging and provider package operations.',
+            'Access high-intent property services from verified professionals. All our surveyors and valuers are vetted by Justice City for maximum trust.',
             style: TextStyle(
               fontSize: 16,
               color: _jcMuted,
+              height: 1.7,
             ),
           ),
         ],
@@ -281,13 +289,11 @@ class _ServicesHeroCard extends StatelessWidget {
 class _ServiceOfferingCard extends StatelessWidget {
   const _ServiceOfferingCard({
     required this.offering,
-    required this.onStartChat,
-    required this.onOpenPackage,
+    required this.onBook,
   });
 
   final ServiceOffering offering;
-  final VoidCallback onStartChat;
-  final VoidCallback onOpenPackage;
+  final VoidCallback onBook;
 
   @override
   Widget build(BuildContext context) {
@@ -296,73 +302,120 @@ class _ServiceOfferingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                height: 42,
-                width: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(12),
+          Align(
+            alignment: Alignment.topRight,
+            child: Container(
+              width: 120,
+              height: 80,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF8FBFF),
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(18),
+                  bottomLeft: Radius.circular(64),
                 ),
-                child: Icon(icon, color: _jcHeading),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      offering.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _jcHeading,
+            ),
+          ),
+          Transform.translate(
+            offset: const Offset(0, -40),
+            child: Container(
+              height: 56,
+              width: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: const Color(0xFF2563EB), size: 30),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            offering.name,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            offering.description,
+            style: const TextStyle(
+              color: _jcMuted,
+              fontSize: 16,
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _ServiceInfoRow(
+            icon: Icons.schedule_outlined,
+            color: const Color(0xFF3B82F6),
+            label: 'Delivery: ${offering.turnaround}',
+          ),
+          const SizedBox(height: 12),
+          const _ServiceInfoRow(
+            icon: Icons.verified_user_outlined,
+            color: Color(0xFF22C55E),
+            label: 'Vetted Professionals Only',
+          ),
+          const SizedBox(height: 22),
+          Container(
+            padding: const EdgeInsets.fromLTRB(0, 18, 0, 0),
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Color(0xFFF1F5F9)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'STARTS FROM',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                          color: Color(0xFF94A3B8),
+                        ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        offering.price,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: _jcHeading,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                FilledButton(
+                  onPressed: onBook,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 18,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      offering.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _jcMuted),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                  ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Book Now'),
+                      SizedBox(width: 10),
+                      Icon(Icons.arrow_forward),
+                    ],
+                  ),
                 ),
-              ),
-              _CodeTag(code: offering.code),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _MetaChip(icon: Icons.payments_outlined, text: offering.price),
-              _MetaChip(icon: Icons.timer_outlined, text: offering.turnaround),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: onStartChat,
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  label: const Text('Start service chat'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onOpenPackage,
-                  icon: const Icon(Icons.link),
-                  label: const Text('Open provider package'),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -376,6 +429,113 @@ class _ServiceOfferingCard extends StatelessWidget {
     if (source.contains('verification')) return Icons.verified_user_outlined;
     if (source.contains('snagging')) return Icons.handyman_outlined;
     return Icons.work_outline;
+  }
+}
+
+class _QualityGuaranteeCard extends StatelessWidget {
+  const _QualityGuaranteeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0B173A),
+            Color(0xFF091633),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+              color: Colors.white.withValues(alpha: 0.04),
+            ),
+            child: const Text(
+              'JUSTICE CITY',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          const Text(
+            'The Justice City Quality Guarantee',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Every service report is audited by our internal team before delivery. If a surveyor is not verified, they are not on our platform. Period.',
+            style: TextStyle(
+              color: Color(0xFFCBD5E1),
+              fontSize: 16,
+              height: 1.7,
+            ),
+          ),
+          const SizedBox(height: 22),
+          OutlinedButton(
+            onPressed: () {},
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text('Learn about Vetting'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ServiceInfoRow extends StatelessWidget {
+  const _ServiceInfoRow({
+    required this.icon,
+    required this.color,
+    required this.label,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 22, color: color),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: _jcMuted,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -394,64 +554,6 @@ class _ShellCard extends StatelessWidget {
         border: Border.all(color: _jcPanelBorder),
       ),
       child: child,
-    );
-  }
-}
-
-class _CodeTag extends StatelessWidget {
-  const _CodeTag({required this.code});
-
-  final String code;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        code.toUpperCase(),
-        style: const TextStyle(
-          color: Color(0xFF1D4ED8),
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-}
-
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _jcPanelBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: _jcMuted),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: const TextStyle(
-              color: _jcMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
