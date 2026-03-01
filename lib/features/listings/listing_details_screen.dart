@@ -9,6 +9,7 @@ import '../../domain/models/listing.dart';
 import '../../state/me_provider.dart';
 import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
+import '../shell/justice_city_shell.dart';
 import 'listings_screen.dart';
 
 const _jcPageBg = Color(0xFFF4F7FB);
@@ -156,9 +157,24 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     }
 
     if (listing == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Property Details')),
-        body: const Center(child: Text('Listing not found.')),
+      return JusticeCityShell(
+        currentPath: '/home',
+        backgroundColor: _jcPageBg,
+        leading: IconButton(
+          onPressed: () => context.go('/home'),
+          icon: const Icon(Icons.arrow_back_rounded, color: _jcHeading),
+        ),
+        leadingWidth: 56,
+        child: const Center(
+          child: Text(
+            'Listing not found.',
+            style: TextStyle(
+              color: _jcHeading,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       );
     }
 
@@ -169,42 +185,40 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     final galleryItems = _buildGalleryItems(listing, record, progress);
     final statCards = _buildStatCards(listing, record);
     final documents = _buildDocumentCards(steps);
-    final priceText =
-        [listing.price, listing.priceSuffix].whereType<String>().join(' ');
+    final priceText = _formatListingPrice(listing.price, listing.priceSuffix);
+    final recordAgentName = _recordString(record, const ['agentName', 'agent_name']) ?? '';
+    final agentName =
+        recordAgentName.trim().isEmpty ? 'Justice City Agent' : recordAgentName;
+    final agentRoleLabel = isVerifiedUser ? 'Verified Agent' : 'Property Agent';
 
-    return Scaffold(
+    return JusticeCityShell(
+      currentPath: '/home',
       backgroundColor: _jcPageBg,
-      appBar: AppBar(
-        backgroundColor: _jcPageBg,
-        surfaceTintColor: Colors.transparent,
-        titleSpacing: 0,
-        title: const Text(
-          'Property Details',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 24,
-            color: _jcHeading,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.invalidate(listingsProvider);
-              ref.invalidate(listingDetailRecordProvider(widget.listingId));
-            },
-          ),
-          IconButton(
-            icon: Icon(_isSaved ? Icons.favorite : Icons.favorite_border),
-            onPressed: () => setState(() => _isSaved = !_isSaved),
-          ),
-        ],
+      leading: IconButton(
+        onPressed: () {
+          if (Navigator.of(context).canPop()) {
+            context.pop();
+          } else {
+            context.go('/home');
+          }
+        },
+        icon: const Icon(Icons.arrow_back_rounded, color: _jcHeading),
       ),
-      body: ListView(
+      leadingWidth: 56,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh, color: _jcHeading),
+          onPressed: () {
+            ref.invalidate(listingsProvider);
+            ref.invalidate(listingDetailRecordProvider(widget.listingId));
+          },
+        ),
+      ],
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
         children: [
           Container(
-            height: 360,
+            height: 420,
             decoration: BoxDecoration(
               color: const Color(0xFF0F172A),
               borderRadius: BorderRadius.circular(28),
@@ -260,7 +274,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 18, vertical: 14),
                           decoration: BoxDecoration(
-                            color: const Color(0x66000000),
+                            color: const Color(0xCC000000),
                             borderRadius: BorderRadius.circular(22),
                             border: Border.all(color: const Color(0x33FFFFFF)),
                           ),
@@ -269,11 +283,9 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                priceText.isEmpty
-                                    ? 'Price on request'
-                                    : priceText,
+                                priceText,
                                 style: const TextStyle(
-                                  fontSize: 28,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.w800,
                                   color: Colors.white,
                                 ),
@@ -294,11 +306,33 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _HeroCircleButton(
-                            icon: Icons.chevron_left,
-                            onTap: galleryItems.length <= 1
-                                ? null
-                                : () {
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: _jcHeading,
+                              side: BorderSide.none,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 18, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            onPressed: () => setState(() => _isSaved = !_isSaved),
+                            icon: Icon(
+                              _isSaved
+                                  ? Icons.favorite
+                                  : Icons.favorite_border_outlined,
+                              color: _isSaved ? Colors.red : _jcHeading,
+                            ),
+                            label: Text(_isSaved ? 'Saved' : 'Save'),
+                          ),
+                          if (galleryItems.length > 1) ...[
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                _HeroCircleButton(
+                                  icon: Icons.chevron_left,
+                                  onTap: () {
                                     final target = (_heroIndex - 1)
                                         .clamp(0, galleryItems.length - 1);
                                     _heroController.animateToPage(
@@ -308,13 +342,11 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                       curve: Curves.easeOut,
                                     );
                                   },
-                          ),
-                          const SizedBox(height: 8),
-                          _HeroCircleButton(
-                            icon: Icons.chevron_right,
-                            onTap: galleryItems.length <= 1
-                                ? null
-                                : () {
+                                ),
+                                const SizedBox(width: 8),
+                                _HeroCircleButton(
+                                  icon: Icons.chevron_right,
+                                  onTap: () {
                                     final target = (_heroIndex + 1)
                                         .clamp(0, galleryItems.length - 1);
                                     _heroController.animateToPage(
@@ -324,13 +356,26 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                       curve: Curves.easeOut,
                                     );
                                   },
-                          ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ],
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+              '${_heroIndex + 1} / ${galleryItems.length}',
+              style: const TextStyle(
+                color: _jcMuted,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(height: 18),
@@ -351,7 +396,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  listing.location ?? '-',
+                  (listing.location ?? '-').trim(),
                   style: const TextStyle(
                     fontSize: 16,
                     color: _jcMuted,
@@ -359,24 +404,27 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                   ),
                 ),
               ),
-              _StatusChip(status: listing.status ?? '-'),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: statCards
-                .map(
-                  (item) => Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                          right: item == statCards.last ? 0 : 10),
-                      child: _DetailStatCard(item: item),
-                    ),
-                  ),
-                )
-                .toList(),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: _jcPanelBorder),
+            ),
+            child: Row(
+              children: [
+                Expanded(child: _DetailStatCard(item: statCards[0])),
+                _statDivider(),
+                Expanded(child: _DetailStatCard(item: statCards[1])),
+                _statDivider(),
+                Expanded(child: _DetailStatCard(item: statCards[2])),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _Card(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -388,14 +436,14 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                   color: _jcHeading,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               Text(
                 (listing.description ?? '').trim().isEmpty
                     ? 'No description has been provided for this listing yet.'
                     : listing.description!.trim(),
                 style: const TextStyle(
                   fontSize: 17,
-                  height: 1.65,
+                  height: 1.7,
                   color: Color(0xFF334155),
                 ),
               ),
@@ -412,11 +460,11 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               ),
             ]),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _DarkSectionCard(
             title: 'Verified Documentation',
             subtitle: isVerifiedUser
-                ? 'Document previews follow live verification progress.'
+                ? 'Document previews follow the verification workflow for this property.'
                 : 'Full document access is restricted to verified users only.',
             children: [
               ...documents,
@@ -429,7 +477,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               ],
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _Card(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -453,17 +501,16 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                   ),
                 ),
               ]),
-              const SizedBox(height: 6),
-              LinearProgressIndicator(
-                  value: steps.isEmpty ? 0 : progress / 100),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: steps.isEmpty ? 0 : progress / 100),
+              const SizedBox(height: 10),
               Text(
                 steps.isEmpty
                     ? 'Verification details are being prepared.'
                     : '$completed/${steps.length} checks completed.',
                 style: const TextStyle(fontSize: 14, color: _jcMuted),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               FilledButton.tonalIcon(
                 onPressed: () => _openVerificationDialog(listing, steps),
                 icon: const Icon(Icons.verified_outlined),
@@ -471,7 +518,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
               ),
             ]),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _Card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,47 +526,59 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                 Row(
                   children: [
                     Container(
-                      width: 68,
-                      height: 68,
+                      width: 86,
+                      height: 86,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
-                        borderRadius: BorderRadius.circular(18),
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: _jcPanelBorder),
                       ),
                       alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.shield_outlined,
-                        color: Colors.white,
-                        size: 30,
+                      child: Text(
+                        _leadingInitial(agentName),
+                        style: const TextStyle(
+                          color: _jcHeading,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    const Expanded(
+                    const SizedBox(width: 16),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Justice City Support',
-                            style: TextStyle(
+                            agentName,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
                               color: _jcHeading,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 4),
                           Text(
-                            'Verified property support desk',
-                            style: TextStyle(color: _jcMuted),
+                            agentRoleLabel,
+                            style: const TextStyle(color: _jcMuted),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Tap to view public profile',
+                            style: TextStyle(color: Color(0xFF2563EB), fontSize: 12),
                           ),
                         ],
                       ),
                     ),
+                    if (isVerifiedUser)
+                      const Icon(Icons.verified_user_outlined,
+                          color: Color(0xFF16A34A)),
                   ],
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(
                   onPressed: () => context.go('/chat'),
                   icon: const Icon(Icons.chat_bubble_outline),
-                  label: const Text('Chat with Support'),
+                  label: const Text('Chat with Agent'),
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
@@ -528,92 +587,64 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                   label: const Text('Request Callback'),
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton.icon(
+                FilledButton.tonalIcon(
                   onPressed: () => context.go('/schedule-tour'),
                   icon: const Icon(Icons.calendar_month_outlined),
                   label: const Text('Schedule Tour'),
                 ),
                 const SizedBox(height: 18),
-                const Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.verified_user_outlined,
-                            color: Color(0xFF16A34A), size: 16),
-                        SizedBox(width: 6),
-                        Text(
-                          'Justice Protect',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.1,
-                            color: _jcHeading,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Identity and contact details stay protected until verification and workflow checks are complete.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 12, color: _jcMuted, height: 1.45),
-                    ),
-                  ],
+                const Text(
+                  'Your identity is protected. Contact details are only shared once mutual verification is complete.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: _jcMuted, fontSize: 12, height: 1.45),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          _Card(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text(
-                'Listing Status',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                  color: _jcHeading,
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (canManage)
-                DropdownButtonFormField<String>(
-                  initialValue: _statusDraft ?? listing.status,
-                  items: const [
-                    DropdownMenuItem(value: 'Draft', child: Text('Draft')),
-                    DropdownMenuItem(
-                        value: 'Pending Review', child: Text('Pending Review')),
-                    DropdownMenuItem(
-                        value: 'Published', child: Text('Published')),
-                    DropdownMenuItem(
-                        value: 'Archived', child: Text('Archived')),
-                    DropdownMenuItem(value: 'Sold', child: Text('Sold')),
-                    DropdownMenuItem(value: 'Rented', child: Text('Rented')),
-                  ],
-                  onChanged: (value) => setState(() => _statusDraft = value),
-                )
-              else
-                const Text('Read-only for this listing.'),
-              const SizedBox(height: 8),
-              if (canManage)
-                FilledButton.icon(
-                  onPressed: _statusBusy || _statusDraft == null
-                      ? null
-                      : () => _applyStatus(listing),
-                  icon: const Icon(Icons.save_outlined),
-                  label: const Text('Save Status'),
-                ),
-              if (!canManage) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'This listing is currently read-only for your account.',
-                  style: TextStyle(color: _jcMuted),
-                ),
-              ],
-            ]),
-          ),
+          if (canManage) ...[
+            const SizedBox(height: 18),
+            _Card(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Listing Status',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: _statusDraft ?? listing.status,
+                      items: const [
+                        DropdownMenuItem(value: 'Draft', child: Text('Draft')),
+                        DropdownMenuItem(
+                            value: 'Pending Review',
+                            child: Text('Pending Review')),
+                        DropdownMenuItem(
+                            value: 'Published', child: Text('Published')),
+                        DropdownMenuItem(
+                            value: 'Archived', child: Text('Archived')),
+                        DropdownMenuItem(value: 'Sold', child: Text('Sold')),
+                        DropdownMenuItem(value: 'Rented', child: Text('Rented')),
+                      ],
+                      onChanged: (value) => setState(() => _statusDraft = value),
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.icon(
+                      onPressed: _statusBusy || _statusDraft == null
+                          ? null
+                          : () => _applyStatus(listing),
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('Save Status'),
+                    ),
+                  ]),
+            ),
+          ],
+          const SizedBox(height: 8),
+          const JusticeCityFooter(),
         ],
       ),
     );
@@ -939,36 +970,22 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     final imageUrls = {
       if ((listing.coverImageUrl ?? '').trim().isNotEmpty)
         listing.coverImageUrl!.trim(),
-      ..._recordStringList(
-          record, const ['imageUrls', 'images', 'listingImages']),
+      ..._recordStringList(record, const ['imageUrls', 'images', 'listingImages']),
     }.toList();
 
-    final items = <_HeroPanelItem>[
-      if (imageUrls.isNotEmpty)
-        _HeroPanelItem.image(imageUrls.first)
-      else
-        const _HeroPanelItem.panel(
+    if (imageUrls.isEmpty) {
+      return const [
+        _HeroPanelItem.panel(
           title: 'Property Showcase',
           subtitle: 'Official media is being prepared for this listing.',
           icon: Icons.home_work_outlined,
         ),
-      _HeroPanelItem.panel(
-        title: 'Verification Workflow',
-        subtitle: progress == 0
-            ? 'Verification details are being prepared.'
-            : '$progress% of verification checks have been completed.',
-        icon: Icons.verified_user_outlined,
-      ),
-      _HeroPanelItem.panel(
-        title: listing.location ?? 'Property Location',
-        subtitle:
-            '${listing.listingType ?? 'Property'} • ${listing.status ?? 'Status pending'}',
-        icon: Icons.location_city_outlined,
-      ),
-    ];
+      ];
+    }
 
-    return items;
+    return imageUrls.map(_HeroPanelItem.image).toList();
   }
+
 
   List<_DetailStatItem> _buildStatCards(
       Listing listing, Map<String, dynamic>? record) {
@@ -989,8 +1006,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
         icon: Icons.bathtub_outlined,
       ),
       _DetailStatItem(
-        label: 'Size',
-        value: (sizeSqm ?? '').trim().isEmpty ? '--' : '$sizeSqm sqm',
+        label: 'Square Ft',
+        value: (sizeSqm ?? '').trim().isEmpty ? '--' : sizeSqm!,
         icon: Icons.open_in_full_outlined,
       ),
     ];
@@ -1243,37 +1260,37 @@ class _DetailStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        children: [
-          Icon(item.icon, color: const Color(0xFF2563EB)),
-          const SizedBox(height: 8),
-          Text(
-            item.label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.1,
-              color: Color(0xFF94A3B8),
-            ),
+    return Column(
+      children: [
+        Text(
+          item.label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.1,
+            color: Color(0xFF94A3B8),
           ),
-          const SizedBox(height: 8),
-          Text(
-            item.value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: _jcHeading,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(item.icon, color: const Color(0xFF2563EB)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                item.value,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: _jcHeading,
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -1487,43 +1504,35 @@ class _LockNotice extends StatelessWidget {
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-  final String status;
-  @override
-  Widget build(BuildContext context) {
-    final normalized = status.toLowerCase();
-    var bg = const Color(0xFFF1F5F9);
-    var fg = const Color(0xFF334155);
-    if (normalized.contains('pending')) {
-      bg = const Color(0xFFFEF3C7);
-      fg = const Color(0xFFB45309);
-    } else if (normalized == 'published' || normalized == 'approved') {
-      bg = const Color(0xFFDCFCE7);
-      fg = const Color(0xFF15803D);
-    } else if (normalized == 'sold' || normalized == 'rented') {
-      bg = const Color(0xFFDBEAFE);
-      fg = const Color(0xFF1D4ED8);
-    } else if (normalized == 'rejected' || normalized == 'blocked') {
-      bg = const Color(0xFFFEE2E2);
-      fg = const Color(0xFFB91C1C);
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          color: fg,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-      ),
-    );
+Widget _statDivider() => Container(width: 1, height: 54, color: _jcPanelBorder);
+
+String _leadingInitial(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return 'J';
+  return trimmed.substring(0, 1).toUpperCase();
+}
+
+String _formatListingPrice(String? rawPrice, String? suffix) {
+  final cleaned = (rawPrice ?? '').replaceAll(',', '').trim();
+  if (cleaned.isEmpty) return 'Price on request';
+
+  final amount = int.tryParse(cleaned);
+  if (amount == null) {
+    final label = (rawPrice ?? '').trim();
+    final extra = (suffix ?? '').trim();
+    return extra.isEmpty ? label : '$label $extra';
   }
+
+  const naira = '\u20A6';
+  final digits = amount.toString();
+  final buffer = StringBuffer(naira);
+  for (var i = 0; i < digits.length; i++) {
+    final fromEnd = digits.length - i;
+    buffer.write(digits[i]);
+    if (fromEnd > 1 && fromEnd % 3 == 1) buffer.write(',');
+  }
+  final extra = (suffix ?? '').trim();
+  return extra.isEmpty ? buffer.toString() : '${buffer.toString()} $extra';
 }
 
 String? _recordString(Map<String, dynamic>? raw, List<String> keys) {
@@ -1703,3 +1712,6 @@ const Map<String, _StepVm> _stepMeta = {
     status: 'pending',
   ),
 };
+
+
+

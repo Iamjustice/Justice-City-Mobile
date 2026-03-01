@@ -87,20 +87,11 @@ class _MarketplacePropertyDetailsScreenState
         icon: const Icon(Icons.arrow_back_rounded, color: _heading),
       ),
       leadingWidth: 56,
-      actions: [
-        IconButton(
-          onPressed: () => setState(() => _saved = !_saved),
-          icon: Icon(
-            _saved ? Icons.favorite : Icons.favorite_border,
-            color: _saved ? Colors.red : _heading,
-          ),
-        ),
-      ],
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
         children: [
           Container(
-            height: 380,
+            height: 440,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: _heading,
@@ -146,23 +137,34 @@ class _MarketplacePropertyDetailsScreenState
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(
-                        child: Text(
-                          _ngn(property.price),
-                          style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.54),
+                            borderRadius: BorderRadius.circular(26),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                          ),
+                          child: Text(
+                            _ngn(property.price),
+                            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
+                          ),
                         ),
                       ),
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.34)),
+                      const SizedBox(width: 12),
+                      FilledButton.icon(
+                        onPressed: () => setState(() => _saved = !_saved),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: _heading,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
                         ),
-                        child: Icon(
+                        icon: Icon(
                           _saved ? Icons.favorite : Icons.favorite_border,
-                          color: Colors.white,
+                          color: _saved ? Colors.red : _heading,
                         ),
+                        label: Text(_saved ? 'Saved' : 'Save'),
                       ),
                     ],
                   ),
@@ -172,9 +174,17 @@ class _MarketplacePropertyDetailsScreenState
           ),
           const SizedBox(height: 12),
           Center(
-            child: Text(
-              '${_pageIndex + 1} / ${images.length}',
-              style: const TextStyle(color: _muted, fontWeight: FontWeight.w600),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: _panelBorder),
+              ),
+              child: Text(
+                '${_pageIndex + 1} / ${images.length}',
+                style: const TextStyle(color: _muted, fontWeight: FontWeight.w700),
+              ),
             ),
           ),
           const SizedBox(height: 18),
@@ -307,18 +317,37 @@ class _MarketplacePropertyDetailsScreenState
                   onPressed: () => session == null ? context.go('/sign-in') : context.go('/chat'),
                   icon: const Icon(Icons.chat_bubble_outline),
                   label: Text(session == null ? 'Sign in to Chat' : 'Chat with Agent'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(58),
+                    backgroundColor: _blue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () => context.go('/request-callback'),
                   icon: const Icon(Icons.call_outlined),
                   label: const Text('Request Callback'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(58),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    side: const BorderSide(color: _heading, width: 1.6),
+                    foregroundColor: _heading,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 FilledButton.tonalIcon(
                   onPressed: () => context.go('/schedule-tour'),
                   icon: const Icon(Icons.calendar_month_outlined),
                   label: const Text('Schedule Tour'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(58),
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    foregroundColor: _heading,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 const Text(
@@ -473,8 +502,9 @@ class _FeatureChip extends StatelessWidget {
 }
 
 String _ngn(int value) {
+  const naira = '\u20A6';
   final digits = value.toString();
-  final buffer = StringBuffer('₦');
+  final buffer = StringBuffer(naira);
   for (var i = 0; i < digits.length; i++) {
     final fromEnd = digits.length - i;
     buffer.write(digits[i]);
@@ -482,3 +512,4 @@ String _ngn(int value) {
   }
   return buffer.toString();
 }
+
