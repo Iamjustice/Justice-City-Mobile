@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../state/me_provider.dart';
 import '../../state/session_provider.dart';
+import 'public_agent_profile_screen.dart';
 import '../shell/justice_city_shell.dart';
 import 'marketplace_mock_data.dart';
 
@@ -294,25 +295,39 @@ class _MarketplacePropertyDetailsScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(radius: 32, backgroundImage: NetworkImage(property.agent.imageUrl)),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(property.agent.name, style: const TextStyle(color: _heading, fontSize: 20, fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 4),
-                          Text(property.agent.verified ? 'Verified Agent' : 'Agent profile', style: const TextStyle(color: _muted)),
-                          const SizedBox(height: 2),
-                          const Text('Tap to view agent profile', style: TextStyle(color: _blue, fontSize: 12)),
-                        ],
-                      ),
+                InkWell(
+                  onTap: () => context.go(
+                    '/agents/${marketplaceAgentSlug(property.agent.name)}',
+                    extra: PublicAgentRouteArgs(
+                      name: property.agent.name,
+                      imageUrl: property.agent.imageUrl,
+                      verified: property.agent.verified,
                     ),
-                    if (property.agent.verified)
-                      const Icon(Icons.verified_user_outlined, color: Color(0xFF16A34A)),
-                  ],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        CircleAvatar(radius: 32, backgroundImage: NetworkImage(property.agent.imageUrl)),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(property.agent.name, style: const TextStyle(color: _heading, fontSize: 20, fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 4),
+                              Text(property.agent.verified ? 'Verified Agent' : 'Agent profile', style: const TextStyle(color: _muted)),
+                              const SizedBox(height: 2),
+                              const Text('Tap to view agent profile', style: TextStyle(color: _blue, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        if (property.agent.verified)
+                          const Icon(Icons.verified_user_outlined, color: Color(0xFF16A34A)),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/auth_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/marketplace/public_agent_profile_screen.dart';
 import '../features/marketplace/marketplace_property_details_screen.dart';
 import '../features/listings/listings_screen.dart';
 import '../features/listings/listing_details_screen.dart';
@@ -47,6 +48,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == '/services' ||
           loc == '/hiring' ||
           loc.startsWith('/property/') ||
+          loc.startsWith('/agents/') ||
           loc == '/request-callback' ||
           loc == '/schedule-tour' ||
           loc == '/terms-of-service' ||
@@ -181,6 +183,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final token = state.pathParameters['token'] ?? '';
           return ProviderPackageScreen(token: token);
+        },
+      ),
+      GoRoute(
+        path: '/agents/:slug',
+        builder: (_, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          return PublicAgentProfileScreen(
+            slug: slug,
+            routeArgs: state.extra is PublicAgentRouteArgs
+                ? state.extra as PublicAgentRouteArgs
+                : null,
+          );
         },
       ),
       GoRoute(

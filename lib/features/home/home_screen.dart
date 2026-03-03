@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../state/me_provider.dart';
 import '../../state/session_provider.dart';
 import '../marketplace/marketplace_mock_data.dart';
+import '../marketplace/public_agent_profile_screen.dart';
 import '../shell/justice_city_shell.dart';
 
 const _border = Color(0xFFE2E8F0);
@@ -26,11 +28,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _visible = 8;
   String _priceFilter = 'Any';
   String _bedFilter = 'Any';
+  VideoPlayerController? _heroVideo;
+
+  @override
+  void initState() {
+    super.initState();
+    _initHeroVideo();
+  }
 
   @override
   void dispose() {
+    _heroVideo?.dispose();
     _search.dispose();
     super.dispose();
+  }
+
+  Future<void> _initHeroVideo() async {
+    final controller = VideoPlayerController.asset('assets/videos/Video1.mp4');
+    try {
+      _heroVideo = controller;
+      await controller.setLooping(true);
+      await controller.setVolume(0);
+      await controller.initialize();
+      await controller.play();
+      if (!mounted) return;
+      setState(() {});
+    } catch (_) {
+      await controller.dispose();
+      _heroVideo = null;
+    }
   }
 
   @override
@@ -196,11 +222,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.network(
-            'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=1200&q=80',
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: const Color(0xFF0B4D7B)),
-          ),
+          if (_heroVideo?.value.isInitialized ?? false)
+            FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _heroVideo!.value.size.width,
+                height: _heroVideo!.value.size.height,
+                child: VideoPlayer(_heroVideo!),
+              ),
+            )
+          else
+            Container(color: const Color(0xFF0B4D7B)),
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -537,17 +569,31 @@ class _PropertyCardState extends State<_PropertyCard> {
                   const SizedBox(height: 14),
                   const Divider(color: _border),
                   const SizedBox(height: 14),
-                  Row(children: [
-                    CircleAvatar(radius: 20, backgroundImage: NetworkImage(property.agent.imageUrl)),
-                    const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(property.agent.name, style: const TextStyle(color: _heading, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 2),
-                      const Text('Tap to view agent profile', style: TextStyle(color: _blue, fontSize: 12)),
-                    ])),
-                    if (property.agent.verified)
-                      const Icon(Icons.verified_user_outlined, color: Color(0xFF16A34A)),
-                  ]),
+                  InkWell(
+                    onTap: () => context.go(
+                      '/agents/${marketplaceAgentSlug(property.agent.name)}',
+                      extra: PublicAgentRouteArgs(
+                        name: property.agent.name,
+                        imageUrl: property.agent.imageUrl,
+                        verified: property.agent.verified,
+                      ),
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(children: [
+                        CircleAvatar(radius: 20, backgroundImage: NetworkImage(property.agent.imageUrl)),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(property.agent.name, style: const TextStyle(color: _heading, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 2),
+                          const Text('Tap to view agent profile', style: TextStyle(color: _blue, fontSize: 12)),
+                        ])),
+                        if (property.agent.verified)
+                          const Icon(Icons.verified_user_outlined, color: Color(0xFF16A34A)),
+                      ]),
+                    ),
+                  ),
                 ],
               ),
             ),

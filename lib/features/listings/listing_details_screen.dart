@@ -9,6 +9,8 @@ import '../../domain/models/listing.dart';
 import '../../state/me_provider.dart';
 import '../../state/repositories_providers.dart';
 import '../../state/session_provider.dart';
+import '../marketplace/marketplace_mock_data.dart';
+import '../marketplace/public_agent_profile_screen.dart';
 import '../shell/justice_city_shell.dart';
 import 'listings_screen.dart';
 
@@ -523,56 +525,70 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 86,
-                      height: 86,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _jcPanelBorder),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        _leadingInitial(agentName),
-                        style: const TextStyle(
-                          color: _jcHeading,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                InkWell(
+                  onTap: () => context.go(
+                    '/agents/${marketplaceAgentSlug(agentName)}',
+                    extra: PublicAgentRouteArgs(
+                      name: agentName,
+                      imageUrl: 'https://api.dicebear.com/7.x/avataaars/png?seed=${Uri.encodeComponent(agentName)}',
+                      verified: isVerifiedUser,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            agentName,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 86,
+                          height: 86,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: _jcPanelBorder),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            _leadingInitial(agentName),
                             style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
                               color: _jcHeading,
+                              fontSize: 34,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            agentRoleLabel,
-                            style: const TextStyle(color: _jcMuted),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                agentName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: _jcHeading,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                agentRoleLabel,
+                                style: const TextStyle(color: _jcMuted),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Tap to view public profile',
+                                style: TextStyle(color: Color(0xFF2563EB), fontSize: 12),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            'Tap to view public profile',
-                            style: TextStyle(color: Color(0xFF2563EB), fontSize: 12),
-                          ),
-                        ],
-                      ),
+                        ),
+                        if (isVerifiedUser)
+                          const Icon(Icons.verified_user_outlined,
+                              color: Color(0xFF16A34A)),
+                      ],
                     ),
-                    if (isVerifiedUser)
-                      const Icon(Icons.verified_user_outlined,
-                          color: Color(0xFF16A34A)),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(

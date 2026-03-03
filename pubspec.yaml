@@ -13,6 +13,7 @@ dependencies:
   go_router: ^14.2.0
   dio: ^5.7.0
   supabase_flutter: ^2.6.0
+  video_player: ^2.9.2
 
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
@@ -34,6 +35,7 @@ flutter:
   assets:
     - assets/images/logo.png
     - assets/images/app_icon_source.png
+    - assets/videos/Video1.mp4
 
 flutter_launcher_icons:
   android: true
@@ -50,7 +52,7 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#000000"
-  image: assets/images/app_icon_source.png
+  image: assets/images/logo.png
   android: true
   ios: true
   web: true

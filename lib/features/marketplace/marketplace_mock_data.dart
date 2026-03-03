@@ -540,3 +540,277 @@ MarketplaceProperty? marketplacePropertyById(String id) {
   }
   return null;
 }
+
+class MarketplaceAgentReview {
+  const MarketplaceAgentReview({
+    required this.reviewer,
+    required this.rating,
+    required this.dateLabel,
+    required this.comment,
+  });
+
+  final String reviewer;
+  final double rating;
+  final String dateLabel;
+  final String comment;
+}
+
+class MarketplaceAgentDeal {
+  const MarketplaceAgentDeal({
+    required this.title,
+    required this.location,
+    required this.priceLabel,
+    this.dateLabel,
+    this.statusLabel,
+  });
+
+  final String title;
+  final String location;
+  final String priceLabel;
+  final String? dateLabel;
+  final String? statusLabel;
+}
+
+class MarketplacePublicAgentProfile {
+  const MarketplacePublicAgentProfile({
+    required this.slug,
+    required this.name,
+    required this.verified,
+    required this.imageUrl,
+    required this.bio,
+    required this.salesRating,
+    required this.reviewCount,
+    required this.closedDealsCount,
+    required this.recentDeals,
+    required this.closedDeals,
+    required this.latestReviews,
+  });
+
+  final String slug;
+  final String name;
+  final bool verified;
+  final String imageUrl;
+  final String bio;
+  final double salesRating;
+  final int reviewCount;
+  final int closedDealsCount;
+  final List<MarketplaceAgentDeal> recentDeals;
+  final List<MarketplaceAgentDeal> closedDeals;
+  final List<MarketplaceAgentReview> latestReviews;
+}
+
+String marketplaceAgentSlug(String name) => name
+    .trim()
+    .toLowerCase()
+    .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+    .replaceAll(RegExp(r'^-|-$'), '');
+
+MarketplaceAgent? marketplaceAgentBySlug(String slug) {
+  for (final property in marketplaceProperties) {
+    if (marketplaceAgentSlug(property.agent.name) == slug) {
+      return property.agent;
+    }
+  }
+  return null;
+}
+
+MarketplacePublicAgentProfile marketplacePublicAgentProfileFor({
+  required String name,
+  String? imageUrl,
+  bool verified = true,
+}) {
+  final slug = marketplaceAgentSlug(name);
+  final sourceProperties = marketplaceProperties
+      .where((property) => marketplaceAgentSlug(property.agent.name) == slug)
+      .toList();
+  final metrics = _agentMetricFor(slug);
+
+  final recentDeals = sourceProperties
+      .take(2)
+      .map(
+        (property) => MarketplaceAgentDeal(
+          title: property.title,
+          location: property.location,
+          priceLabel: 'Listed at ${_ngn(property.price)}',
+        ),
+      )
+      .toList();
+
+  final closedDeals = sourceProperties
+      .take(2)
+      .toList()
+      .asMap()
+      .entries
+      .map(
+        (entry) => MarketplaceAgentDeal(
+          title: entry.value.title,
+          location: entry.value.location,
+          priceLabel: _ngn((entry.value.price * 0.92).round()),
+          dateLabel: _closedDateLabel(entry.key),
+          statusLabel: 'Closed',
+        ),
+      )
+      .toList();
+
+  return MarketplacePublicAgentProfile(
+    slug: slug,
+    name: name,
+    verified: verified,
+    imageUrl: imageUrl ?? 'https://api.dicebear.com/7.x/avataaars/png?seed=$slug',
+    bio: metrics.bio,
+    salesRating: metrics.salesRating,
+    reviewCount: metrics.reviewCount,
+    closedDealsCount: metrics.closedDealsCount,
+    recentDeals: recentDeals.isEmpty
+        ? const [
+            MarketplaceAgentDeal(
+              title: 'Verification-backed property sourcing',
+              location: 'Active across Lagos and Abuja',
+              priceLabel: 'Recently listed',
+            ),
+          ]
+        : recentDeals,
+    closedDeals: closedDeals.isEmpty
+        ? [
+            MarketplaceAgentDeal(
+              title: 'Closed client mandate',
+              location: 'Justice City verified workflow',
+              priceLabel: _ngn(138000000),
+              dateLabel: 'Jan 8, 2026',
+              statusLabel: 'Closed',
+            ),
+          ]
+        : closedDeals,
+    latestReviews: _latestReviewsFor(slug),
+  );
+}
+
+MarketplacePublicAgentProfile marketplacePublicAgentProfileBySlug(String slug) {
+  final agent = marketplaceAgentBySlug(slug);
+  if (agent != null) {
+    return marketplacePublicAgentProfileFor(
+      name: agent.name,
+      imageUrl: agent.imageUrl,
+      verified: agent.verified,
+    );
+  }
+  final fallbackName = slug
+      .split('-')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
+  return marketplacePublicAgentProfileFor(name: fallbackName, verified: true);
+}
+
+class _AgentMetrics {
+  const _AgentMetrics({
+    required this.bio,
+    required this.salesRating,
+    required this.reviewCount,
+    required this.closedDealsCount,
+  });
+
+  final String bio;
+  final double salesRating;
+  final int reviewCount;
+  final int closedDealsCount;
+}
+
+_AgentMetrics _agentMetricFor(String slug) {
+  switch (slug) {
+    case 'sarah-okon':
+      return const _AgentMetrics(
+        bio: 'Public performance profile. Contact information is intentionally hidden.',
+        salesRating: 5.0,
+        reviewCount: 30,
+        closedDealsCount: 77,
+      );
+    case 'chinedu-obi':
+      return const _AgentMetrics(
+        bio: 'Commercial property specialist focused on verified office and retail assets.',
+        salesRating: 4.9,
+        reviewCount: 26,
+        closedDealsCount: 41,
+      );
+    case 'emmanuel-kalu':
+      return const _AgentMetrics(
+        bio: 'Lekki and island residential advisor with a strong rental closing record.',
+        salesRating: 4.8,
+        reviewCount: 22,
+        closedDealsCount: 35,
+      );
+    default:
+      return const _AgentMetrics(
+        bio: 'Verified public performance profile. Contact information is intentionally hidden.',
+        salesRating: 4.8,
+        reviewCount: 18,
+        closedDealsCount: 24,
+      );
+  }
+}
+
+List<MarketplaceAgentReview> _latestReviewsFor(String slug) {
+  switch (slug) {
+    case 'sarah-okon':
+      return const [
+        MarketplaceAgentReview(
+          reviewer: 'Grace Nwosu',
+          rating: 5.0,
+          dateLabel: 'Dec 22, 2025',
+          comment: 'Handled negotiations well and closed on schedule.',
+        ),
+        MarketplaceAgentReview(
+          reviewer: 'Femi Adesina',
+          rating: 4.8,
+          dateLabel: 'Dec 11, 2025',
+          comment: 'Provided accurate property details and market insights.',
+        ),
+        MarketplaceAgentReview(
+          reviewer: 'Ijeoma Eze',
+          rating: 4.9,
+          dateLabel: 'Nov 30, 2025',
+          comment: 'Reliable from first viewing to final agreement.',
+        ),
+      ];
+    case 'chinedu-obi':
+      return const [
+        MarketplaceAgentReview(
+          reviewer: 'Kunle Adeyemi',
+          rating: 5.0,
+          dateLabel: 'Jan 3, 2026',
+          comment: 'Strong commercial due diligence and clean documentation process.',
+        ),
+        MarketplaceAgentReview(
+          reviewer: 'Ada Thomas',
+          rating: 4.8,
+          dateLabel: 'Dec 15, 2025',
+          comment: 'Clear communication and fast turnaround on inspection requests.',
+        ),
+      ];
+    default:
+      return const [
+        MarketplaceAgentReview(
+          reviewer: 'Verified Client',
+          rating: 4.9,
+          dateLabel: 'Jan 12, 2026',
+          comment: 'Professional, responsive, and easy to work with.',
+        ),
+        MarketplaceAgentReview(
+          reviewer: 'Platform Review',
+          rating: 4.7,
+          dateLabel: 'Dec 28, 2025',
+          comment: 'Delivered a smooth verified transaction workflow.',
+        ),
+      ];
+  }
+}
+
+String _ngn(int amount) {
+  final digits = amount.toString();
+  return '₦${digits.replaceAllMapped(RegExp(r'\\B(?=(\\d{3})+(?!\\d))'), (match) => ',')}';
+}
+
+String _closedDateLabel(int index) {
+  const labels = ['Jan 8, 2026', 'Dec 22, 2025'];
+  return labels[index % labels.length];
+}
