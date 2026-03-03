@@ -676,7 +676,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     Future<void> refreshSteps() async {
       final latest =
           await ref.read(listingDetailRecordProvider(widget.listingId).future);
-      final fromServer = _parseSteps(latest);
+      final fromServer = _resolvedSteps(latest, listing.status);
       if (fromServer.isNotEmpty) {
         steps = fromServer;
       }
@@ -714,8 +714,11 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
-          final completed = steps.where((s) => s.status == 'completed').length;
-          final progress = _progress(steps);
+          final visibleSteps =
+              steps.isEmpty ? _resolvedSteps(null, listing.status) : steps;
+          final completed =
+              visibleSteps.where((s) => s.status == 'completed').length;
+          final progress = _progress(visibleSteps);
           return Dialog(
             insetPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
@@ -742,7 +745,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${listing.title} - $completed/${steps.length} checks completed.',
+                                '${listing.title} - $completed/${visibleSteps.length} checks completed.',
                                 style: const TextStyle(
                                     fontSize: 14, color: _jcMuted),
                               ),
@@ -799,14 +802,14 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                               ),
                               const SizedBox(height: 8),
                               LinearProgressIndicator(
-                                value: steps.isEmpty ? 0 : progress / 100,
+                                value: visibleSteps.isEmpty ? 0 : progress / 100,
                                 minHeight: 8,
                               ),
                             ],
                           ),
                         ),
                         const SizedBox(height: 10),
-                        if (steps.isEmpty)
+                        if (visibleSteps.isEmpty)
                           const _Card(
                             child: Text(
                               'Verification details are being prepared.',
@@ -814,7 +817,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                             ),
                           )
                         else
-                          ...steps.map((step) {
+                          ...visibleSteps.map((step) {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: _Card(
@@ -947,10 +950,10 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                         const Spacer(),
                         if (canEdit)
                           OutlinedButton(
-                            onPressed: busy || steps.isEmpty
+                            onPressed: busy || visibleSteps.isEmpty
                                 ? null
                                 : () async {
-                                    for (final step in steps) {
+                                    for (final step in visibleSteps) {
                                       if (step.status != 'completed') {
                                         await updateStep(setModalState,
                                             step.key, 'completed');
@@ -1782,6 +1785,5 @@ const Map<String, _StepVm> _stepMeta = {
     status: 'pending',
   ),
 };
-
 
 

@@ -1066,39 +1066,53 @@ class _AgentListingsPane extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _jcPanelBorder),
           ),
-          child: const Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Recent Listings',
+              const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Recent Listings',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: _jcHeading,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Create, edit, and manage listings with verification workflow actions.',
+                          style: TextStyle(color: _jcMuted, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  SizedBox(
+                    width: 150,
+                    child: Text(
+                      'All payouts calculated at 5% commission rate.',
+                      textAlign: TextAlign.right,
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _jcHeading,
+                        color: _jcMuted,
+                        height: 1.4,
                       ),
                     ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Create, edit, and manage listings with verification workflow actions.',
-                      style: TextStyle(color: _jcMuted, height: 1.5),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 16),
-              SizedBox(
-                width: 170,
-                child: Text(
-                  'All payouts calculated at 5% commission rate.',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: _jcMuted,
-                    height: 1.4,
                   ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: 220,
+                child: FilledButton.icon(
+                  onPressed: () => context.go('/listings'),
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  label: const Text('Open Console'),
                 ),
               ),
             ],
