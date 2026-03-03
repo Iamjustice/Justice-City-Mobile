@@ -145,7 +145,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
         widget.initial ?? ref.watch(listingByIdProvider(widget.listingId));
     final record =
         ref.watch(listingDetailRecordProvider(widget.listingId)).valueOrNull;
-    final steps = _parseSteps(record);
+    final steps = _resolvedSteps(record, listing?.status);
     final progress = _progress(steps);
 
     if (listing != null &&
@@ -1631,6 +1631,60 @@ List<_StepVm> _parseSteps(Map<String, dynamic>? raw) {
   parsed.sort(
       (a, b) => (_stepOrder[a.key] ?? 99).compareTo(_stepOrder[b.key] ?? 99));
   return parsed;
+}
+
+List<_StepVm> _resolvedSteps(Map<String, dynamic>? raw, String? listingStatus) {
+  final parsed = _parseSteps(raw);
+  if (parsed.isNotEmpty) return parsed;
+
+  final normalized = (listingStatus ?? '').trim().toLowerCase();
+  if (!normalized.contains('pending')) return const [];
+
+  return [
+    const _StepVm(
+      key: 'ownership',
+      label: 'Ownership Verification',
+      description: 'Validate ownership records against title registry entries.',
+      status: 'completed',
+    ),
+    const _StepVm(
+      key: 'ownership_authorization',
+      label: 'Ownership Authorization',
+      description:
+          'Confirm owner-issued authorization to list and market the property.',
+      status: 'in_progress',
+    ),
+    const _StepVm(
+      key: 'survey',
+      label: 'Survey Verification',
+      description: 'Review survey plan details and boundary coordinates.',
+      status: 'pending',
+    ),
+    const _StepVm(
+      key: 'right_of_way',
+      label: 'Right of Way Verification',
+      description: 'Confirm legal access roads and easement compliance.',
+      status: 'pending',
+    ),
+    const _StepVm(
+      key: 'ministerial_charting',
+      label: 'Ministerial Charting',
+      description: 'Check government acquisition status and charting records.',
+      status: 'pending',
+    ),
+    const _StepVm(
+      key: 'legal_verification',
+      label: 'Legal Verification',
+      description: 'Validate legal standing and applicable encumbrances.',
+      status: 'pending',
+    ),
+    const _StepVm(
+      key: 'property_document_verification',
+      label: 'Property Document Verification',
+      description: 'Audit title documents (C of O, deed, survey, supporting files).',
+      status: 'pending',
+    ),
+  ];
 }
 
 String _normalizeStatus(String raw) {

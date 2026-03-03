@@ -235,18 +235,49 @@ class _AgentDashboard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                SizedBox(
-                  height: 110,
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    scrollDirection: Axis.horizontal,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
                     children: [
-                      _KpiCard(
-                          title: 'My Listings', value: '${listings.length}'),
-                      _KpiCard(
-                          title: 'Pending Review', value: '${stats.pending}'),
-                      _KpiCard(title: 'Published', value: '${stats.published}'),
-                      _KpiCard(title: 'Closed Deals', value: '${stats.closed}'),
+                      Expanded(
+                        child: _AgentSummaryCard(
+                          title: 'My Listings',
+                          value: '${listings.length}',
+                          icon: Icons.apartment_outlined,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _AgentSummaryCard(
+                          title: 'Pending Review',
+                          value: '${stats.pending}',
+                          icon: Icons.hourglass_top_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _AgentSummaryCard(
+                          title: 'Published',
+                          value: '${stats.published}',
+                          icon: Icons.verified_outlined,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _AgentSummaryCard(
+                          title: 'Pending Agent Payouts',
+                          value: stats.closed == 0 ? 'NO' : '${stats.closed}',
+                          icon: Icons.schedule_rounded,
+                          accentColor: const Color(0xFFD97706),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -281,9 +312,36 @@ class _AgentDashboard extends ConsumerWidget {
                       unselectedLabelColor: Color(0xFF64748B),
                       indicatorColor: Color(0xFF2563EB),
                       tabs: [
-                        Tab(text: 'Listings'),
-                        Tab(text: 'Leads'),
-                        Tab(text: 'Verification'),
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.apartment_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text('Listings'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline, size: 18),
+                              SizedBox(width: 8),
+                              Text('Chats'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.schedule_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text('Pending Verifications'),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -292,9 +350,9 @@ class _AgentDashboard extends ConsumerWidget {
                 Expanded(
                   child: TabBarView(
                     children: [
-                      _ListingsPane(listings: listings),
-                      const _ChatsPane(isAdmin: false),
-                      _VerificationPane(listings: listings),
+                      _AgentListingsPane(listings: listings),
+                      _AgentChatsPane(listings: listings),
+                      _AgentVerificationPane(listings: listings),
                     ],
                   ),
                 ),
@@ -316,86 +374,164 @@ class _SellerDashboard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final listingsAsync = ref.watch(dashboardListingsProvider);
 
-    return JusticeCityShell(
-      currentPath: '/dashboard',
-      actions: [
-        IconButton(
-          tooltip: 'Refresh',
-          onPressed: () => ref.invalidate(dashboardListingsProvider),
-          icon: const Icon(Icons.refresh),
+    return DefaultTabController(
+      length: 3,
+      child: JusticeCityShell(
+        currentPath: '/dashboard',
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () => ref.invalidate(dashboardListingsProvider),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+        child: listingsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Failed to load listings: $e')),
+          data: (listings) {
+            final stats = _listingStats(listings);
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: _ConsoleHeader(
+                    title: 'Seller Dashboard',
+                    subtitle:
+                        'Publish inventory, manage buyer conversations, and track verification progress.',
+                    displayName: displayName,
+                    role: 'seller',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _AgentSummaryCard(
+                          title: 'Inventory',
+                          value: '${listings.length}',
+                          icon: Icons.home_work_outlined,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _AgentSummaryCard(
+                          title: 'Pending Review',
+                          value: '${stats.pending}',
+                          icon: Icons.hourglass_top_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _AgentSummaryCard(
+                          title: 'Published',
+                          value: '${stats.published}',
+                          icon: Icons.verified_outlined,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _AgentSummaryCard(
+                          title: 'Closed Deals',
+                          value: '${stats.closed}',
+                          icon: Icons.task_alt_outlined,
+                          accentColor: const Color(0xFF16A34A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.go('/listings'),
+                          icon: const Icon(Icons.add_business_outlined),
+                          label: const Text('Open Listings Console'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: _jcPanelBorder),
+                    ),
+                    child: const TabBar(
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      labelPadding: EdgeInsets.symmetric(horizontal: 18),
+                      padding: EdgeInsets.all(4),
+                      labelColor: Color(0xFF0F172A),
+                      unselectedLabelColor: Color(0xFF64748B),
+                      indicatorColor: Color(0xFF2563EB),
+                      tabs: [
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.apartment_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text('Listings'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline, size: 18),
+                              SizedBox(width: 8),
+                              Text('Chats'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.schedule_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text('Pending Verifications'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _AgentListingsPane(listings: listings),
+                      _AgentChatsPane(listings: listings),
+                      _AgentVerificationPane(listings: listings),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
-      ],
-      child: listingsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Failed to load listings: $e')),
-        data: (listings) {
-          final stats = _listingStats(listings);
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            children: [
-              _ConsoleHeader(
-                title: 'Seller Listings Console',
-                subtitle:
-                    'Publish inventory, track negotiations, and close buyer requests.',
-                displayName: displayName,
-                role: 'seller',
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                      child: _KpiCard(
-                          title: 'Inventory', value: '${listings.length}')),
-                  Expanded(
-                      child: _KpiCard(
-                          title: 'Pending Review', value: '${stats.pending}')),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                      child: _KpiCard(
-                          title: 'Published', value: '${stats.published}')),
-                  Expanded(
-                      child:
-                          _KpiCard(title: 'Closed', value: '${stats.closed}')),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _ActionTile(
-                icon: Icons.home_work_outlined,
-                title: 'Manage Listings',
-                subtitle:
-                    'Create, edit, duplicate, archive, and unarchive listings',
-                onTap: () => context.go('/listings'),
-              ),
-              const SizedBox(height: 10),
-              _ActionTile(
-                icon: Icons.chat_bubble_outline,
-                title: 'Buyer & Support Chats',
-                subtitle:
-                    'Respond to inquiries and progress transaction actions',
-                onTap: () => context.go('/chat'),
-              ),
-              const SizedBox(height: 10),
-              _ActionTile(
-                icon: Icons.shield_outlined,
-                title: 'Verification Progress',
-                subtitle:
-                    'Review pending verification checks for your listings',
-                onTap: () => context.go('/listings'),
-              ),
-              const SizedBox(height: 12),
-              const JusticeCityFooter(),
-            ],
-          );
-        },
       ),
     );
   }
 }
-
 class _OwnerDashboard extends ConsumerWidget {
   const _OwnerDashboard({required this.displayName});
 
@@ -806,6 +942,64 @@ class _KpiCard extends StatelessWidget {
   }
 }
 
+class _AgentSummaryCard extends StatelessWidget {
+  const _AgentSummaryCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    this.accentColor = const Color(0xFF2563EB),
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 150,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFE5E7EB), width: 6),
+              ),
+              child: Icon(icon, color: accentColor, size: 24),
+            ),
+          ),
+          const Spacer(),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 15, color: _jcMuted),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ListingsPane extends StatelessWidget {
   const _ListingsPane({required this.listings});
 
@@ -855,6 +1049,72 @@ class _ListingsPane extends StatelessWidget {
   }
 }
 
+class _AgentListingsPane extends StatelessWidget {
+  const _AgentListingsPane({required this.listings});
+
+  final List<Listing> listings;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _jcPanelBorder),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Recent Listings',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Create, edit, and manage listings with verification workflow actions.',
+                      style: TextStyle(color: _jcMuted, height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 16),
+              SizedBox(
+                width: 170,
+                child: Text(
+                  'All payouts calculated at 5% commission rate.',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: _jcMuted,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (listings.isEmpty)
+          const _EmptyState(message: 'No listings yet.')
+        else
+          ...listings.take(6).map((listing) => _AgentListingCard(listing: listing)),
+        const JusticeCityFooter(),
+      ],
+    );
+  }
+}
+
 class _ChatsPane extends StatelessWidget {
   const _ChatsPane({required this.isAdmin});
 
@@ -881,6 +1141,63 @@ class _ChatsPane extends StatelessWidget {
             subtitle: 'Open moderation, disputes, and PDF job operations',
             onTap: () => context.go('/admin'),
           ),
+      ],
+    );
+  }
+}
+
+class _AgentChatsPane extends StatelessWidget {
+  const _AgentChatsPane({required this.listings});
+
+  final List<Listing> listings;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _jcPanelBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Recent Conversations',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.chat_bubble_outline, color: _jcMuted),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Chat with potential buyers and keep transaction updates in one place.',
+                style: TextStyle(color: _jcMuted, height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              _ActionTile(
+                icon: Icons.chat_bubble_outline,
+                title: 'Leads & Conversations',
+                subtitle:
+                    'Reply to inquiries, track attachments, and manage actions',
+                onTap: () => context.go('/chat'),
+              ),
+            ],
+          ),
+        ),
+        const JusticeCityFooter(),
       ],
     );
   }
@@ -926,6 +1243,60 @@ class _VerificationPane extends StatelessWidget {
                   context.go('/property/${listing.id}', extra: listing),
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _AgentVerificationPane extends StatelessWidget {
+  const _AgentVerificationPane({required this.listings});
+
+  final List<Listing> listings;
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = listings.where((l) {
+      final s = (l.status ?? '').toLowerCase();
+      return s.contains('pending') || s == 'draft' || s == 'archived';
+    }).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _jcPanelBorder),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pending Property Verifications',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _jcHeading,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Track the status of your listed properties currently being verified by our professionals.',
+                style: TextStyle(color: _jcMuted, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (pending.isEmpty)
+          const _EmptyState(message: 'No pending verification records.')
+        else
+          ...pending
+              .take(6)
+              .map((listing) => _AgentVerificationCard(listing: listing)),
+        const JusticeCityFooter(),
       ],
     );
   }
@@ -988,6 +1359,312 @@ class _ListingPreviewTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AgentListingCard extends StatelessWidget {
+  const _AgentListingCard({required this.listing});
+
+  final Listing listing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.home_work_outlined, color: _jcHeading),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      listing.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      listing.location ?? '-',
+                      style: const TextStyle(color: _jcMuted),
+                    ),
+                    const SizedBox(height: 6),
+                    _StatusBadge(status: listing.status ?? '-'),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Open listing',
+                onPressed: () => context.go('/property/${listing.id}', extra: listing),
+                icon: const Icon(Icons.chevron_right_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _AgentMetaPill(
+                  icon: Icons.payments_outlined,
+                  label: _formatAgentPrice(listing),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _AgentMetaPill(
+                  icon: Icons.visibility_outlined,
+                  label: '${listing.views ?? 0} views',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _AgentMetaPill(
+                  icon: Icons.mail_outline,
+                  label: '${listing.inquiries ?? 0} leads',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _AgentMetaPill(
+                  icon: Icons.event_outlined,
+                  label: _formatListingDate(listing.createdAt),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgentVerificationCard extends StatelessWidget {
+  const _AgentVerificationCard({required this.listing});
+
+  final Listing listing;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = _dashboardVerificationProgress(listing);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.shield_outlined, color: _jcHeading),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      listing.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _StatusBadge(status: listing.status ?? '-'),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _formatSubmittedAgo(listing.createdAt),
+                            style: const TextStyle(color: _jcMuted),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => context.go(
+                '/property/${listing.id}?view=verification',
+                extra: listing,
+              ),
+              child: const Text('View Progress'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Verification progress',
+                  style: TextStyle(color: _jcMuted),
+                ),
+              ),
+              Text(
+                '$progress%',
+                style: const TextStyle(
+                  color: _jcMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress / 100,
+              minHeight: 10,
+              backgroundColor: const Color(0xFFD9E7FF),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgentMetaPill extends StatelessWidget {
+  const _AgentMetaPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: _jcMuted),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _jcHeading,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _formatAgentPrice(Listing listing) {
+  final cleaned = (listing.price ?? '').replaceAll(',', '').trim();
+  if (cleaned.isEmpty) return 'Price on request';
+  final amount = int.tryParse(cleaned);
+  final suffix = (listing.priceSuffix ?? '').trim();
+  if (amount == null) {
+    return suffix.isEmpty ? cleaned : '$cleaned $suffix';
+  }
+  final digits = amount.toString();
+  final buffer = StringBuffer('\u20A6');
+  for (var i = 0; i < digits.length; i++) {
+    final fromEnd = digits.length - i;
+    buffer.write(digits[i]);
+    if (fromEnd > 1 && fromEnd % 3 == 1) {
+      buffer.write(',');
+    }
+  }
+  return suffix.isEmpty ? buffer.toString() : '${buffer.toString()} $suffix';
+}
+
+String _formatListingDate(DateTime? date) {
+  if (date == null) return 'Date pending';
+  final local = date.toLocal();
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[local.month - 1]} ${local.day}, ${local.year}';
+}
+
+String _formatSubmittedAgo(DateTime? date) {
+  if (date == null) return 'Submitted recently';
+  final now = DateTime.now();
+  final diff = now.difference(date);
+  if (diff.inDays >= 1) {
+    return 'Submitted ${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
+  }
+  if (diff.inHours >= 1) {
+    return 'Submitted ${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
+  }
+  return 'Submitted today';
+}
+
+int _dashboardVerificationProgress(Listing listing) {
+  final status = (listing.status ?? '').trim().toLowerCase();
+  if (status.contains('published') || status == 'sold' || status == 'rented') {
+    return 100;
+  }
+  if (status.contains('pending')) return 21;
+  if (status == 'draft') return 7;
+  return 0;
 }
 
 class _ActionTile extends StatelessWidget {
@@ -1115,3 +1792,5 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
+
+
