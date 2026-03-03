@@ -35,7 +35,6 @@ flutter:
   assets:
     - assets/images/logo.png
     - assets/images/app_icon_source.png
-    - assets/videos/Video1.mp4
 
 flutter_launcher_icons:
   android: true

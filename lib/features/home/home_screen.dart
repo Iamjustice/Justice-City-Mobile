@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../env.dart';
 import '../../state/me_provider.dart';
 import '../../state/session_provider.dart';
 import '../marketplace/marketplace_mock_data.dart';
@@ -44,7 +45,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _initHeroVideo() async {
-    final controller = VideoPlayerController.asset('assets/videos/Video1.mp4');
+    final source = Env.homeHeroVideoUrl.trim();
+    if (source.isEmpty) {
+      return;
+    }
+
+    final controller = VideoPlayerController.networkUrl(Uri.parse(source));
     try {
       _heroVideo = controller;
       await controller.setLooping(true);
@@ -232,7 +238,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             )
           else
-            Container(color: const Color(0xFF0B4D7B)),
+            Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(
+                  'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(color: const Color(0xFF0B4D7B)),
+                ),
+                Container(color: const Color(0x660B4D7B)),
+              ],
+            ),
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
