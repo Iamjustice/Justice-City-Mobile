@@ -157,7 +157,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       backgroundColor: const Color(0xFFE2E8F0),
                       child: Text(
                         initial,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: _jcHeading,
                           fontWeight: FontWeight.w700,
                           fontSize: 20,
@@ -171,7 +171,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         children: [
                           Text(
                             identity.isEmpty ? 'Member' : identity,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
                               color: _jcHeading,
@@ -180,7 +180,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           const SizedBox(height: 4),
                           Text(
                             '$capitalRole - ${me.email ?? '-'}',
-                            style: TextStyle(color: _jcMuted),
+                            style: const TextStyle(color: _jcMuted),
                           ),
                           const SizedBox(height: 10),
                           Wrap(
@@ -1685,6 +1685,8 @@ class _ParityMetric extends StatelessWidget {
     );
   }
 }
+
+
 
 
 
