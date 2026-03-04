@@ -427,14 +427,14 @@ class _OverviewTab extends ConsumerWidget {
                     )
                   else
                     ...verifications.take(3).map((item) {
-                      final m = item is Map ? item as Map : <String, dynamic>{};
+                      final m = item;
                       final user = (m['user'] ?? m['userName'] ?? 'User').toString();
                       final type = (m['type'] ?? 'Verification').toString();
                       final status = (m['status'] ?? '').toString();
                       final docs = (m['documents'] is List) ? (m['documents'] as List).length : 0;
                       return _OverviewMiniRow(
                         title: user,
-                        subtitle: '$type • ${docs} document${docs == 1 ? '' : 's'}',
+                        subtitle: '$type - $docs document${docs == 1 ? '' : 's'}',
                         trailing: _StatusPill(
                           text: status.isEmpty ? 'Awaiting Review' : status,
                           ok: status.toLowerCase() == 'approved',
@@ -464,14 +464,14 @@ class _OverviewTab extends ConsumerWidget {
                     )
                   else
                     ...flaggedListings.take(3).map((item) {
-                      final m = item is Map ? item as Map : <String, dynamic>{};
+                      final m = item;
                       final title = (m['title'] ?? 'Listing').toString();
                       final location = (m['location'] ?? 'Location unavailable').toString();
                       final reason = (m['reason'] ?? 'No reason supplied').toString();
                       final status = (m['status'] ?? '').toString();
                       return _OverviewMiniRow(
                         title: title,
-                        subtitle: '$location • $reason',
+                        subtitle: '$location ï¿½ $reason',
                         trailing: _StatusPill(
                           text: status.isEmpty ? 'Open' : status,
                           ok: status.toLowerCase() == 'cleared',
@@ -511,7 +511,7 @@ class _OverviewTab extends ConsumerWidget {
                     )
                   else
                     ...hiring.take(3).map((item) {
-                      final m = item is Map ? item as Map : <String, dynamic>{};
+                      final m = item;
                       final name = (m['fullName'] ?? m['full_name'] ?? 'Applicant').toString();
                       final track = (m['serviceTrack'] ?? m['service_track'] ?? 'Track pending').toString();
                       final status = (m['status'] ?? '').toString();
@@ -545,14 +545,14 @@ class _OverviewTab extends ConsumerWidget {
                     )
                   else
                     ...users.take(3).map((item) {
-                      final m = item is Map ? item as Map : <String, dynamic>{};
+                      final m = item;
                       final name = (m['name'] ?? m['fullName'] ?? 'Member').toString();
                       final role = (m['role'] ?? 'User').toString();
                       final email = (m['email'] ?? 'No email').toString();
                       final status = (m['status'] ?? '').toString();
                       return _OverviewMiniRow(
                         title: name,
-                        subtitle: '$role • $email',
+                        subtitle: '$role ï¿½ $email',
                         trailing: _StatusPill(
                           text: status.isEmpty ? 'Active' : status,
                           ok: status.toLowerCase() == 'active',
@@ -1700,48 +1700,6 @@ String _adminReadableError(Object error) {
   return '$status: $detail';
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.title, required this.value});
-
-  final String title;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 180,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _jcPanelBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: _jcMuted,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              color: _jcHeading,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AdminHeaderBlock extends StatelessWidget {
   const _AdminHeaderBlock({required this.commissionRate});
 
@@ -1882,5 +1840,8 @@ class _StatusPill extends StatelessWidget {
     );
   }
 }
+
+
+
 
 
