@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/models/chat_conversation.dart';
 import '../../domain/models/listing.dart';
 import '../../state/me_provider.dart';
 import '../../state/repositories_providers.dart';
@@ -20,6 +21,23 @@ final dashboardListingsProvider = FutureProvider<List<Listing>>((ref) async {
 
   try {
     return await ref.read(listingsRepositoryProvider).fetchAgentListings();
+  } catch (_) {
+    return const [];
+  }
+});
+
+final dashboardConversationsProvider =
+    FutureProvider<List<ChatConversation>>((ref) async {
+  final me = await ref.watch(meProvider.future);
+  final viewerId = me?.id.trim();
+  if (viewerId == null || viewerId.isEmpty) return const [];
+
+  try {
+    return await ref.read(chatRepositoryProvider).listConversations(
+          viewerId: viewerId,
+          viewerRole: me?.role,
+          viewerName: me?.email,
+        );
   } catch (_) {
     return const [];
   }
@@ -351,7 +369,7 @@ class _AgentDashboard extends ConsumerWidget {
                   child: TabBarView(
                     children: [
                       _AgentListingsPane(listings: listings),
-                      _AgentChatsPane(listings: listings),
+                      const _AgentChatsPane(),
                       _AgentVerificationPane(listings: listings),
                     ],
                   ),
@@ -519,7 +537,7 @@ class _SellerDashboard extends ConsumerWidget {
                   child: TabBarView(
                     children: [
                       _AgentListingsPane(listings: listings),
-                      _AgentChatsPane(listings: listings),
+                      const _AgentChatsPane(),
                       _AgentVerificationPane(listings: listings),
                     ],
                   ),
@@ -1160,59 +1178,64 @@ class _ChatsPane extends StatelessWidget {
   }
 }
 
-class _AgentChatsPane extends StatelessWidget {
-  const _AgentChatsPane({required this.listings});
-
-  final List<Listing> listings;
+class _AgentChatsPane extends ConsumerWidget {
+  const _AgentChatsPane();
 
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: _jcPanelBorder),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final conversationsAsync = ref.watch(dashboardConversationsProvider);
+
+    return conversationsAsync.when(
+      loading: () => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        children: const [
+          _AgentConversationHeader(conversationCountLabel: 'Loading'),
+          SizedBox(height: 10),
+          _EmptyState(message: 'Loading inbox...'),
+          JusticeCityFooter(),
+        ],
+      ),
+      error: (error, _) => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        children: [
+          const _AgentConversationHeader(conversationCountLabel: 'Inbox unavailable'),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.chat_bubble_outline,
+            title: 'Open Inbox',
+            subtitle: 'Continue in the full chat workspace while the dashboard feed reloads.',
+            onTap: () => context.go('/chat'),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Recent Conversations',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _jcHeading,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.chat_bubble_outline, color: _jcMuted),
-                ],
+          const SizedBox(height: 10),
+          _EmptyState(message: 'Could not load recent conversations: $error'),
+          const JusticeCityFooter(),
+        ],
+      ),
+      data: (conversations) {
+        final recent = conversations.take(5).toList();
+        final countLabel = conversations.isEmpty
+            ? 'No open threads'
+            : '${conversations.length} open';
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          children: [
+            _AgentConversationHeader(conversationCountLabel: countLabel),
+            const SizedBox(height: 10),
+            if (recent.isEmpty)
+              const _EmptyState(
+                message: 'No buyer or support conversations yet.',
+              )
+            else
+              ...recent.map(
+                (conversation) => _AgentConversationCard(
+                  conversation: conversation,
+                ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Chat with potential buyers and keep transaction updates in one place.',
-                style: TextStyle(color: _jcMuted, height: 1.5),
-              ),
-              const SizedBox(height: 16),
-              _ActionTile(
-                icon: Icons.chat_bubble_outline,
-                title: 'Leads & Conversations',
-                subtitle:
-                    'Reply to inquiries, track attachments, and manage actions',
-                onTap: () => context.go('/chat'),
-              ),
-            ],
-          ),
-        ),
-        const JusticeCityFooter(),
-      ],
+            const JusticeCityFooter(),
+          ],
+        );
+      },
     );
   }
 }
@@ -1284,21 +1307,35 @@ class _AgentVerificationPane extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _jcPanelBorder),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Pending Property Verifications',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: _jcHeading,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Track the status of your listed properties currently being verified by our professionals.',
-                style: TextStyle(color: _jcMuted, height: 1.5),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pending Property Verifications',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: _jcHeading,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Track the status of your listed properties currently being verified by our professionals.',
+                          style: TextStyle(color: _jcMuted, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _AgentSectionCountBadge(label: '${pending.length} open'),
+                ],
               ),
             ],
           ),
@@ -1312,6 +1349,191 @@ class _AgentVerificationPane extends StatelessWidget {
               .map((listing) => _AgentVerificationCard(listing: listing)),
         const JusticeCityFooter(),
       ],
+    );
+  }
+}
+
+class _AgentConversationHeader extends StatelessWidget {
+  const _AgentConversationHeader({required this.conversationCountLabel});
+
+  final String conversationCountLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Recent Conversations',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Chat with potential buyers and keep transaction updates in one place.',
+                      style: TextStyle(color: _jcMuted, height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              _AgentSectionCountBadge(label: conversationCountLabel),
+            ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: 220,
+            child: FilledButton.icon(
+              onPressed: () => context.go('/chat'),
+              icon: const Icon(Icons.forum_outlined),
+              label: const Text('Open Inbox'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgentConversationCard extends StatelessWidget {
+  const _AgentConversationCard({required this.conversation});
+
+  final ChatConversation conversation;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _conversationPreviewTitle(conversation);
+    final preview = (conversation.lastMessage ?? '').trim();
+    final secondaryLabel = (conversation.listingId?.trim().isNotEmpty ?? false)
+        ? 'Listing thread'
+        : '${conversation.participants.length} participant${conversation.participants.length == 1 ? '' : 's'}';
+    final updatedLabel = _formatConversationUpdatedAt(
+      conversation.lastMessageAt ?? conversation.updatedAt,
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => context.go('/chat/${conversation.id}', extra: conversation),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.chat_bubble_outline,
+                    color: _jcHeading,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _jcHeading,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        preview.isEmpty
+                            ? 'Open the thread to review the latest inquiry and attachments.'
+                            : preview,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: _jcMuted, height: 1.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right_rounded),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _AgentMetaPill(
+                    icon: Icons.schedule_outlined,
+                    label: updatedLabel,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _AgentMetaPill(
+                    icon: (conversation.listingId?.trim().isNotEmpty ?? false)
+                        ? Icons.home_work_outlined
+                        : Icons.people_outline,
+                    label: secondaryLabel,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AgentSectionCountBadge extends StatelessWidget {
+  const _AgentSectionCountBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: _jcHeading,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
@@ -1636,6 +1858,28 @@ String _formatAgentPrice(Listing listing) {
     }
   }
   return suffix.isEmpty ? buffer.toString() : '${buffer.toString()} $suffix';
+}
+
+String _conversationPreviewTitle(ChatConversation conversation) {
+  if (conversation.subject?.trim().isNotEmpty ?? false) {
+    return conversation.subject!.trim();
+  }
+  if (conversation.participants.isNotEmpty) {
+    return conversation.participants.map((p) => p.name).join(', ');
+  }
+  return 'Conversation';
+}
+
+String _formatConversationUpdatedAt(DateTime? date) {
+  if (date == null) return 'Updated recently';
+  final diff = DateTime.now().difference(date);
+  if (diff.inDays >= 1) {
+    return 'Updated ${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
+  }
+  if (diff.inHours >= 1) {
+    return 'Updated ${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
+  }
+  return 'Updated today';
 }
 
 String _formatListingDate(DateTime? date) {
