@@ -482,15 +482,77 @@ class _VerificationsTab extends ConsumerWidget {
                     const Text('Documents:',
                         style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 4),
-                    ...docs.take(4).map((d) {
-                      final dm = d is Map
-                          ? Map<String, dynamic>.from(d)
-                          : <String, dynamic>{};
-                      return Text(
-                        '- ${(dm['name'] ?? '').toString()}  ${(dm['url'] ?? '').toString()}',
-                        style: const TextStyle(color: _jcMuted),
-                      );
-                    }),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: docs.take(4).map((d) {
+                        final dm = d is Map
+                            ? Map<String, dynamic>.from(d)
+                            : <String, dynamic>{};
+                        final name = (dm['name'] ??
+                                dm['documentType'] ??
+                                dm['document_type'] ??
+                                'Document')
+                            .toString()
+                            .trim();
+                        final hasLink = (dm['url'] ?? dm['signedUrl'] ?? '')
+                            .toString()
+                            .trim()
+                            .isNotEmpty;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _jcPanelBorder),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.description_outlined,
+                                size: 16,
+                                color: _jcMuted,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                name.isEmpty ? 'Document' : name,
+                                style: const TextStyle(
+                                  color: _jcHeading,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: hasLink
+                                      ? const Color(0xFFDBEAFE)
+                                      : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  hasLink ? 'Secure link' : 'Stored record',
+                                  style: TextStyle(
+                                    color: hasLink
+                                        ? const Color(0xFF1D4ED8)
+                                        : _jcMuted,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
                     if (docs.length > 4) const Text('...'),
                     const SizedBox(height: 8),
                   ],

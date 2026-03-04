@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/me_provider.dart';
@@ -33,6 +34,19 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
   String? _revokingLinkId;
   String? _latestPackageUrl;
   String? _latestToken;
+
+  Future<void> _copySecureValue(String value, String message) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  String _maskedToken(String raw) {
+    if (raw.length <= 10) return raw;
+    return '${raw.substring(0, 6)}...${raw.substring(raw.length - 4)}';
+  }
 
   @override
   void dispose() {
@@ -299,11 +313,25 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                SelectableText(
-                                  f.signedUrl ??
-                                      '${f.bucketId}/${f.storagePath}',
+                                Text(
+                                  f.signedUrl != null &&
+                                          f.signedUrl!.trim().isNotEmpty
+                                      ? 'Secure attachment link available'
+                                      : 'Stored in secure records',
                                   style: const TextStyle(color: _jcMuted),
                                 ),
+                                if (f.signedUrl != null &&
+                                    f.signedUrl!.trim().isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  OutlinedButton.icon(
+                                    onPressed: () => _copySecureValue(
+                                      f.signedUrl!,
+                                      'Attachment link copied.',
+                                    ),
+                                    icon: const Icon(Icons.copy_rounded),
+                                    label: const Text('Copy link'),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -334,11 +362,29 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            SelectableText(
-                              pkg.transcript!.signedUrl ??
-                                  '${pkg.transcript!.bucketId}/${pkg.transcript!.storagePath}',
+                            Text(
+                              pkg.transcript!.signedUrl != null &&
+                                      pkg.transcript!.signedUrl!
+                                          .trim()
+                                          .isNotEmpty
+                                  ? 'Secure transcript link available'
+                                  : 'Stored in secure records',
                               style: const TextStyle(color: _jcMuted),
                             ),
+                            if (pkg.transcript!.signedUrl != null &&
+                                pkg.transcript!.signedUrl!
+                                    .trim()
+                                    .isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              OutlinedButton.icon(
+                                onPressed: () => _copySecureValue(
+                                  pkg.transcript!.signedUrl!,
+                                  'Transcript link copied.',
+                                ),
+                                icon: const Icon(Icons.copy_rounded),
+                                label: const Text('Copy link'),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -470,13 +516,31 @@ class _ProviderPackageScreenState extends ConsumerState<ProviderPackageScreen> {
                         _latestPackageUrl!.trim().isNotEmpty) ...[
                       const SizedBox(height: 10),
                       const Text(
-                        'Latest provider package URL',
+                        'Latest provider package',
                         style: TextStyle(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
-                      SelectableText(_latestPackageUrl!),
+                      const Text(
+                        'Secure provider package generated successfully.',
+                        style: TextStyle(color: _jcMuted),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => _copySecureValue(
+                          _latestPackageUrl!,
+                          'Provider package link copied.',
+                        ),
+                        icon: const Icon(Icons.copy_rounded),
+                        label: const Text('Copy package link'),
+                      ),
                       if (_latestToken != null && _latestToken!.isNotEmpty)
-                        SelectableText('Token: $_latestToken'),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Token: ${_maskedToken(_latestToken!)}',
+                            style: const TextStyle(color: _jcMuted),
+                          ),
+                        ),
                     ],
                   ],
                 ),
