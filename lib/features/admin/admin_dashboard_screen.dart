@@ -471,7 +471,7 @@ class _OverviewTab extends ConsumerWidget {
                       final status = (m['status'] ?? '').toString();
                       return _OverviewMiniRow(
                         title: title,
-                        subtitle: '$location � $reason',
+                        subtitle: '$location - $reason',
                         trailing: _StatusPill(
                           text: status.isEmpty ? 'Open' : status,
                           ok: status.toLowerCase() == 'cleared',
@@ -552,7 +552,7 @@ class _OverviewTab extends ConsumerWidget {
                       final status = (m['status'] ?? '').toString();
                       return _OverviewMiniRow(
                         title: name,
-                        subtitle: '$role � $email',
+                        subtitle: '$role - $email',
                         trailing: _StatusPill(
                           text: status.isEmpty ? 'Active' : status,
                           ok: status.toLowerCase() == 'active',

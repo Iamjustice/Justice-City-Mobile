@@ -11,7 +11,7 @@ import '../features/listings/listing_details_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/chat/chat_thread_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
-import '../features/admin_panel/console_screen.dart';
+import '../features/admin/admin_dashboard_screen.dart';
 import '../features/verify/verify_screen.dart';
 import '../features/transactions/transaction_center_screen.dart';
 import '../features/services/services_screen.dart';

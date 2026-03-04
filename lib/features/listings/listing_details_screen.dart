@@ -19,6 +19,12 @@ const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
 const _jcRadius = 12.0;
+const _galleryFallbackUrls = <String>[
+  'https://images.unsplash.com/photo-1600585154526-990dcea4db0d?auto=format&fit=crop&q=80&w=1400',
+  'https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&q=80&w=1400',
+  'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&q=80&w=1400',
+  'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1400',
+];
 
 final listingByIdProvider = Provider.family<Listing?, String>((ref, id) {
   final asyncListings = ref.watch(listingsProvider);
@@ -328,40 +334,6 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                             ),
                             label: Text(_isSaved ? 'Saved' : 'Save'),
                           ),
-                          if (galleryItems.length > 1) ...[
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                _HeroCircleButton(
-                                  icon: Icons.chevron_left,
-                                  onTap: () {
-                                    final target = (_heroIndex - 1)
-                                        .clamp(0, galleryItems.length - 1);
-                                    _heroController.animateToPage(
-                                      target,
-                                      duration:
-                                          const Duration(milliseconds: 240),
-                                      curve: Curves.easeOut,
-                                    );
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                _HeroCircleButton(
-                                  icon: Icons.chevron_right,
-                                  onTap: () {
-                                    final target = (_heroIndex + 1)
-                                        .clamp(0, galleryItems.length - 1);
-                                    _heroController.animateToPage(
-                                      target,
-                                      duration:
-                                          const Duration(milliseconds: 240),
-                                      curve: Curves.easeOut,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
                         ],
                       ),
                     ],
@@ -1015,6 +987,13 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
       ];
     }
 
+    for (final fallback in _galleryFallbackUrls) {
+      if (imageUrls.length >= 4) break;
+      if (!imageUrls.contains(fallback)) {
+        imageUrls.add(fallback);
+      }
+    }
+
     return imageUrls.map(_HeroPanelItem.image).toList();
   }
 
@@ -1242,32 +1221,6 @@ class _HeroBadge extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HeroCircleButton extends StatelessWidget {
-  const _HeroCircleButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0x66000000),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icon, color: Colors.white),
-        ),
       ),
     );
   }
