@@ -536,9 +536,9 @@ class _SellerDashboard extends ConsumerWidget {
                 Expanded(
                   child: TabBarView(
                     children: [
-                      _AgentListingsPane(listings: listings),
-                      const _AgentChatsPane(),
-                      _AgentVerificationPane(listings: listings),
+                      _SellerListingsPane(listings: listings),
+                      const _SellerChatsPane(),
+                      _SellerVerificationPane(listings: listings),
                     ],
                   ),
                 ),
@@ -1353,6 +1353,278 @@ class _AgentVerificationPane extends StatelessWidget {
   }
 }
 
+class _SellerListingsPane extends StatelessWidget {
+  const _SellerListingsPane({required this.listings});
+
+  final List<Listing> listings;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _jcPanelBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Recent Listings',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: _jcHeading,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Review your latest properties, keep them moving through approval, and jump back into the listings console when you need full controls.',
+                          style: TextStyle(color: _jcMuted, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  SizedBox(
+                    width: 150,
+                    child: Text(
+                      'All payouts calculated at 5% commission rate.',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: _jcMuted,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: 220,
+                child: FilledButton.icon(
+                  onPressed: () => context.go('/listings'),
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  label: const Text('Open Console'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (listings.isEmpty)
+          const _EmptyState(message: 'No listings yet.')
+        else
+          ...listings
+              .take(6)
+              .map((listing) => _AgentListingCard(listing: listing)),
+        const JusticeCityFooter(),
+      ],
+    );
+  }
+}
+
+class _SellerChatsPane extends ConsumerWidget {
+  const _SellerChatsPane();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final conversationsAsync = ref.watch(dashboardConversationsProvider);
+
+    return conversationsAsync.when(
+      loading: () => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        children: const [
+          _SellerConversationHeader(conversationCountLabel: 'Loading'),
+          SizedBox(height: 10),
+          _EmptyState(message: 'Loading inbox...'),
+          JusticeCityFooter(),
+        ],
+      ),
+      error: (error, _) => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        children: [
+          const _SellerConversationHeader(
+            conversationCountLabel: 'Inbox unavailable',
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.chat_bubble_outline,
+            title: 'Open Inbox',
+            subtitle: 'Continue in the full chat workspace while the dashboard feed reloads.',
+            onTap: () => context.go('/chat'),
+          ),
+          const SizedBox(height: 10),
+          _EmptyState(message: 'Could not load recent conversations: $error'),
+          const JusticeCityFooter(),
+        ],
+      ),
+      data: (conversations) {
+        final recent = conversations.take(5).toList();
+        final countLabel = conversations.isEmpty
+            ? 'No open threads'
+            : '${conversations.length} open';
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          children: [
+            _SellerConversationHeader(conversationCountLabel: countLabel),
+            const SizedBox(height: 10),
+            if (recent.isEmpty)
+              const _EmptyState(
+                message: 'No buyer or support conversations yet.',
+              )
+            else
+              ...recent.map(
+                (conversation) => _AgentConversationCard(
+                  conversation: conversation,
+                ),
+              ),
+            const JusticeCityFooter(),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SellerConversationHeader extends StatelessWidget {
+  const _SellerConversationHeader({required this.conversationCountLabel});
+
+  final String conversationCountLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Recent Conversations',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Track live buyer inquiries, support follow-ups, and transaction chats without leaving the dashboard.',
+                      style: TextStyle(color: _jcMuted, height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              _AgentSectionCountBadge(label: conversationCountLabel),
+            ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: 220,
+            child: FilledButton.icon(
+              onPressed: () => context.go('/chat'),
+              icon: const Icon(Icons.forum_outlined),
+              label: const Text('Open Inbox'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SellerVerificationPane extends StatelessWidget {
+  const _SellerVerificationPane({required this.listings});
+
+  final List<Listing> listings;
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = listings.where((l) {
+      final s = (l.status ?? '').toLowerCase();
+      return s.contains('pending') || s == 'draft' || s == 'archived';
+    }).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _jcPanelBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pending Property Verifications',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: _jcHeading,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Review the properties still moving through title, legal, and survey checks before they can go fully live.',
+                          style: TextStyle(color: _jcMuted, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _AgentSectionCountBadge(label: '${pending.length} open'),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (pending.isEmpty)
+          const _EmptyState(message: 'No pending verification records.')
+        else
+          ...pending
+              .take(6)
+              .map((listing) => _AgentVerificationCard(listing: listing)),
+        const JusticeCityFooter(),
+      ],
+    );
+  }
+}
 class _AgentConversationHeader extends StatelessWidget {
   const _AgentConversationHeader({required this.conversationCountLabel});
 
@@ -2050,5 +2322,8 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
+
+
+
 
 

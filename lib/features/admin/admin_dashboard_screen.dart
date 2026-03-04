@@ -318,13 +318,15 @@ class _AdminOpsMetric extends StatelessWidget {
   }
 }
 
-class _OverviewTab extends StatelessWidget {
+class _OverviewTab extends ConsumerWidget {
   const _OverviewTab({required this.dashboardAsync});
 
   final AsyncValue<Map<String, dynamic>> dashboardAsync;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hiringAsync = ref.watch(adminHiringProvider);
+
     return dashboardAsync.when(
       data: (data) {
         final overview =
@@ -340,6 +342,27 @@ class _OverviewTab extends StatelessWidget {
             overview['commissionRate'] ?? overview['commission_rate'] ?? '-';
         final revenueLabel =
             overview['revenueJanLabel'] ?? overview['revenue_jan_label'] ?? '';
+        final verifications = (data['verifications'] is List)
+            ? (data['verifications'] as List)
+            : <dynamic>[];
+        final flaggedListings = (data['flaggedListings'] is List)
+            ? (data['flaggedListings'] as List)
+            : <dynamic>[];
+        final users =
+            (data['users'] is List) ? (data['users'] as List) : <dynamic>[];
+        final hiring = hiringAsync.valueOrNull ?? <dynamic>[];
+        final hiringCount = hiringAsync.maybeWhen(
+          data: (items) => items.length,
+          orElse: () => 0,
+        );
+
+        void openTab(int index) {
+          DefaultTabController.of(context).animateTo(index);
+        }
+
+        final revenueValue = revenueLabel.toString().isEmpty
+            ? '${commissionRate.toString().replaceAll('%', '')}%'
+            : revenueLabel.toString();
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -349,64 +372,193 @@ class _OverviewTab extends StatelessWidget {
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.15,
+              childAspectRatio: 1.08,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _StatCard(title: 'Total Users', value: '$totalUsers'),
-                _StatCard(title: 'Pending Review', value: '$pending'),
-                _StatCard(title: 'Flagged Listings', value: '$flagged'),
-                _StatCard(title: 'Commission Rate', value: '$commissionRate'),
+                _AdminOverviewMetricCard(
+                  title: 'Total Users',
+                  value: '$totalUsers',
+                  icon: Icons.group_outlined,
+                  accentColor: const Color(0xFF2563EB),
+                  caption: 'Tap the queues below to inspect member activity.',
+                ),
+                _AdminOverviewMetricCard(
+                  title: 'Pending Review',
+                  value: '$pending',
+                  icon: Icons.verified_user_outlined,
+                  accentColor: const Color(0xFFF59E0B),
+                  caption: 'Identity verification cases waiting on admin review.',
+                ),
+                _AdminOverviewMetricCard(
+                  title: 'Flagged Listings',
+                  value: '$flagged',
+                  icon: Icons.gpp_bad_outlined,
+                  accentColor: const Color(0xFFDC2626),
+                  caption: 'Listings currently held for moderation or dispute checks.',
+                ),
+                _AdminOverviewMetricCard(
+                  title: 'Revenue (Jan)',
+                  value: revenueValue,
+                  icon: Icons.receipt_long_outlined,
+                  accentColor: const Color(0xFF16A34A),
+                  caption: revenueLabel.toString().isEmpty
+                      ? 'Platform commission rate now applied across payouts.'
+                      : 'Latest reported monthly revenue label from the admin feed.',
+                ),
               ],
             ),
-            if (revenueLabel.toString().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _PanelCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Revenue Snapshot',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: _jcHeading,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      revenueLabel.toString(),
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: _jcHeading,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Latest reported monthly revenue.',
-                      style: TextStyle(color: _jcMuted),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const _PanelCard(
+            const SizedBox(height: 12),
+            _PanelCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Control Center',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: _jcHeading,
-                    ),
+                  _OverviewPreviewHeader(
+                    title: 'Recent Identity Verification Requests',
+                    subtitle: 'Manual review required for high-value accounts.',
+                    badgeLabel: '${verifications.length} queue',
+                    onPressed: () => openTab(1),
+                    actionLabel: 'Review queue',
                   ),
-                  SizedBox(height: 6),
-                  Text(
-                    'Use the tabs above to review verification queues, flagged listings, hiring requests, disputes, and manual PDF job runners.',
-                    style: TextStyle(color: _jcMuted),
+                  const SizedBox(height: 14),
+                  if (verifications.isEmpty)
+                    const Text(
+                      'No verification records are awaiting attention right now.',
+                      style: TextStyle(color: _jcMuted),
+                    )
+                  else
+                    ...verifications.take(3).map((item) {
+                      final m = item is Map ? item as Map : <String, dynamic>{};
+                      final user = (m['user'] ?? m['userName'] ?? 'User').toString();
+                      final type = (m['type'] ?? 'Verification').toString();
+                      final status = (m['status'] ?? '').toString();
+                      final docs = (m['documents'] is List) ? (m['documents'] as List).length : 0;
+                      return _OverviewMiniRow(
+                        title: user,
+                        subtitle: '$type • ${docs} document${docs == 1 ? '' : 's'}',
+                        trailing: _StatusPill(
+                          text: status.isEmpty ? 'Awaiting Review' : status,
+                          ok: status.toLowerCase() == 'approved',
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _PanelCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _OverviewPreviewHeader(
+                    title: 'Flagged Listings Queue',
+                    subtitle: 'Track and resolve suspicious property reports.',
+                    badgeLabel: '${flaggedListings.length} open',
+                    onPressed: () => openTab(2),
+                    actionLabel: 'Open queue',
                   ),
+                  const SizedBox(height: 14),
+                  if (flaggedListings.isEmpty)
+                    const Text(
+                      'No flagged listings are currently active.',
+                      style: TextStyle(color: _jcMuted),
+                    )
+                  else
+                    ...flaggedListings.take(3).map((item) {
+                      final m = item is Map ? item as Map : <String, dynamic>{};
+                      final title = (m['title'] ?? 'Listing').toString();
+                      final location = (m['location'] ?? 'Location unavailable').toString();
+                      final reason = (m['reason'] ?? 'No reason supplied').toString();
+                      final status = (m['status'] ?? '').toString();
+                      return _OverviewMiniRow(
+                        title: title,
+                        subtitle: '$location • $reason',
+                        trailing: _StatusPill(
+                          text: status.isEmpty ? 'Open' : status,
+                          ok: status.toLowerCase() == 'cleared',
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _PanelCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _OverviewPreviewHeader(
+                    title: 'Professional Hiring Applications',
+                    subtitle: 'Review incoming professional applications and move them through screening workflow.',
+                    badgeLabel: '$hiringCount new',
+                    onPressed: () => openTab(3),
+                    actionLabel: 'Hiring queue',
+                  ),
+                  const SizedBox(height: 14),
+                  if (hiringAsync.isLoading)
+                    const Text(
+                      'Loading hiring applications...',
+                      style: TextStyle(color: _jcMuted),
+                    )
+                  else if (hiringAsync.hasError)
+                    Text(
+                      'Could not load hiring applications: ${hiringAsync.error}',
+                      style: const TextStyle(color: _jcMuted),
+                    )
+                  else if (hiring.isEmpty)
+                    const Text(
+                      'No hiring applications submitted yet.',
+                      style: TextStyle(color: _jcMuted),
+                    )
+                  else
+                    ...hiring.take(3).map((item) {
+                      final m = item is Map ? item as Map : <String, dynamic>{};
+                      final name = (m['fullName'] ?? m['full_name'] ?? 'Applicant').toString();
+                      final track = (m['serviceTrack'] ?? m['service_track'] ?? 'Track pending').toString();
+                      final status = (m['status'] ?? '').toString();
+                      return _OverviewMiniRow(
+                        title: name,
+                        subtitle: track,
+                        trailing: _StatusPill(
+                          text: status.isEmpty ? 'submitted' : status,
+                          ok: status.toLowerCase() == 'approved',
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _PanelCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _OverviewPreviewHeader(
+                    title: 'Platform Members',
+                    subtitle: 'A quick look at the latest member records loaded into the console.',
+                    badgeLabel: '${users.length} total',
+                  ),
+                  const SizedBox(height: 14),
+                  if (users.isEmpty)
+                    const Text(
+                      'No member records returned in the admin dashboard payload.',
+                      style: TextStyle(color: _jcMuted),
+                    )
+                  else
+                    ...users.take(3).map((item) {
+                      final m = item is Map ? item as Map : <String, dynamic>{};
+                      final name = (m['name'] ?? m['fullName'] ?? 'Member').toString();
+                      final role = (m['role'] ?? 'User').toString();
+                      final email = (m['email'] ?? 'No email').toString();
+                      final status = (m['status'] ?? '').toString();
+                      return _OverviewMiniRow(
+                        title: name,
+                        subtitle: '$role • $email',
+                        trailing: _StatusPill(
+                          text: status.isEmpty ? 'Active' : status,
+                          ok: status.toLowerCase() == 'active',
+                        ),
+                      );
+                    }),
                 ],
               ),
             ),
@@ -416,6 +568,186 @@ class _OverviewTab extends StatelessWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) =>
           Center(child: Text('Failed to load admin dashboard: $e')),
+    );
+  }
+}
+
+class _AdminOverviewMetricCard extends StatelessWidget {
+  const _AdminOverviewMetricCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.accentColor,
+    required this.caption,
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color accentColor;
+  final String caption;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _jcMuted,
+                  ),
+                ),
+              ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: accentColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: _jcHeading,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            caption,
+            style: const TextStyle(color: _jcMuted, height: 1.45),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverviewPreviewHeader extends StatelessWidget {
+  const _OverviewPreviewHeader({
+    required this.title,
+    required this.subtitle,
+    required this.badgeLabel,
+    this.onPressed,
+    this.actionLabel,
+  });
+
+  final String title;
+  final String subtitle;
+  final String badgeLabel;
+  final VoidCallback? onPressed;
+  final String? actionLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _jcHeading,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                style: const TextStyle(color: _jcMuted, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _StatusPill(text: badgeLabel, ok: true),
+            if (onPressed != null && actionLabel != null) ...[
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: onPressed,
+                child: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _OverviewMiniRow extends StatelessWidget {
+  const _OverviewMiniRow({
+    required this.title,
+    required this.subtitle,
+    required this.trailing,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: _jcHeading,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: _jcMuted, height: 1.45),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          trailing,
+        ],
+      ),
     );
   }
 }
@@ -1550,4 +1882,5 @@ class _StatusPill extends StatelessWidget {
     );
   }
 }
+
 
