@@ -145,7 +145,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
         widget.initial ?? ref.watch(listingByIdProvider(widget.listingId));
     final record =
         ref.watch(listingDetailRecordProvider(widget.listingId)).valueOrNull;
-    final steps = _resolvedSteps(record, listing?.status);
+    final steps = _parseSteps(record);
     final progress = _progress(steps);
 
     if (listing != null &&
@@ -676,7 +676,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
     Future<void> refreshSteps() async {
       final latest =
           await ref.read(listingDetailRecordProvider(widget.listingId).future);
-      final fromServer = _resolvedSteps(latest, listing.status);
+      final fromServer = _parseSteps(latest);
       if (fromServer.isNotEmpty) {
         steps = fromServer;
       }
@@ -714,8 +714,7 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
-          final visibleSteps =
-              steps.isEmpty ? _resolvedSteps(null, listing.status) : steps;
+          final visibleSteps = steps;
           final completed =
               visibleSteps.where((s) => s.status == 'completed').length;
           final progress = _progress(visibleSteps);
@@ -811,9 +810,23 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                         const SizedBox(height: 10),
                         if (visibleSteps.isEmpty)
                           const _Card(
-                            child: Text(
-                              'Verification details are being prepared.',
-                              style: TextStyle(color: Color(0xFF64748B)),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Verification checks pending setup',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: _jcHeading,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'No verification steps have been published for this listing yet. Progress will appear here once the verification workflow starts.',
+                                  style: TextStyle(color: Color(0xFF64748B)),
+                                ),
+                              ],
                             ),
                           )
                         else
@@ -1636,60 +1649,6 @@ List<_StepVm> _parseSteps(Map<String, dynamic>? raw) {
   return parsed;
 }
 
-List<_StepVm> _resolvedSteps(Map<String, dynamic>? raw, String? listingStatus) {
-  final parsed = _parseSteps(raw);
-  if (parsed.isNotEmpty) return parsed;
-
-  final normalized = (listingStatus ?? '').trim().toLowerCase();
-  if (!normalized.contains('pending')) return const [];
-
-  return [
-    const _StepVm(
-      key: 'ownership',
-      label: 'Ownership Verification',
-      description: 'Validate ownership records against title registry entries.',
-      status: 'completed',
-    ),
-    const _StepVm(
-      key: 'ownership_authorization',
-      label: 'Ownership Authorization',
-      description:
-          'Confirm owner-issued authorization to list and market the property.',
-      status: 'in_progress',
-    ),
-    const _StepVm(
-      key: 'survey',
-      label: 'Survey Verification',
-      description: 'Review survey plan details and boundary coordinates.',
-      status: 'pending',
-    ),
-    const _StepVm(
-      key: 'right_of_way',
-      label: 'Right of Way Verification',
-      description: 'Confirm legal access roads and easement compliance.',
-      status: 'pending',
-    ),
-    const _StepVm(
-      key: 'ministerial_charting',
-      label: 'Ministerial Charting',
-      description: 'Check government acquisition status and charting records.',
-      status: 'pending',
-    ),
-    const _StepVm(
-      key: 'legal_verification',
-      label: 'Legal Verification',
-      description: 'Validate legal standing and applicable encumbrances.',
-      status: 'pending',
-    ),
-    const _StepVm(
-      key: 'property_document_verification',
-      label: 'Property Document Verification',
-      description: 'Audit title documents (C of O, deed, survey, supporting files).',
-      status: 'pending',
-    ),
-  ];
-}
-
 String _normalizeStatus(String raw) {
   final s = raw.trim().toLowerCase();
   if (s == 'completed') return 'completed';
@@ -1785,5 +1744,3 @@ const Map<String, _StepVm> _stepMeta = {
     status: 'pending',
   ),
 };
-
-

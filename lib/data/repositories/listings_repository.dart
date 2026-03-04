@@ -153,17 +153,24 @@ class ListingsRepository {
       }
     }
 
-    final res = await _dio.get(
-      ApiEndpoints.agentListings,
-      queryParameters: query.isEmpty ? null : query,
-    );
-    final rows = _extractRows(res.data);
-    for (final row in rows) {
-      if ('${row['id'] ?? ''}'.trim() == listingId) {
-        return row;
+    try {
+      final res = await _dio.get(
+        ApiEndpoints.agentListing(listingId),
+        queryParameters: query.isEmpty ? null : query,
+      );
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
       }
+      if (res.data is Map) {
+        return Map<String, dynamic>.from(res.data as Map);
+      }
+      return null;
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return null;
+      }
+      rethrow;
     }
-    return null;
   }
 
   Future<Listing> createListing({

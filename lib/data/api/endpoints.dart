@@ -6,6 +6,7 @@ class ApiEndpoints {
 
   // Listings (agent)
   static const agentListings = '/api/agent/listings';
+  static String agentListing(String listingId) => '/api/agent/listings/$listingId';
   static String listingAssets(String listingId) =>
       '/api/agent/listings/$listingId/assets';
   static String patchListing(String listingId) =>
