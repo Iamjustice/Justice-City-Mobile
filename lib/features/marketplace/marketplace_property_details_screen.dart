@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../state/saved_properties_provider.dart';
 import '../../state/me_provider.dart';
 import '../../state/session_provider.dart';
 import 'public_agent_profile_screen.dart';
@@ -33,7 +34,6 @@ class _MarketplacePropertyDetailsScreenState
     extends ConsumerState<MarketplacePropertyDetailsScreen> {
   late final PageController _pageController;
   int _pageIndex = 0;
-  bool _saved = false;
 
   @override
   void initState() {
@@ -53,6 +53,7 @@ class _MarketplacePropertyDetailsScreenState
     final session = ref.watch(sessionProvider);
     final me = ref.watch(meProvider).valueOrNull;
     final isVerified = me?.isVerified == true;
+    final isSaved = ref.watch(isListingSavedProvider(widget.propertyId));
 
     if (property == null) {
       return JusticeCityShell(
@@ -155,7 +156,9 @@ class _MarketplacePropertyDetailsScreenState
                       ),
                       const SizedBox(width: 12),
                       FilledButton.icon(
-                        onPressed: () => setState(() => _saved = !_saved),
+                        onPressed: () => ref
+                            .read(savedListingIdsProvider.notifier)
+                            .toggle(widget.propertyId),
                         style: FilledButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: _heading,
@@ -164,10 +167,10 @@ class _MarketplacePropertyDetailsScreenState
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
                         ),
                         icon: Icon(
-                          _saved ? Icons.favorite : Icons.favorite_border,
-                          color: _saved ? Colors.red : _heading,
+                          isSaved ? Icons.favorite : Icons.favorite_border,
+                          color: isSaved ? Colors.red : _heading,
                         ),
-                        label: Text(_saved ? 'Saved' : 'Save'),
+                        label: Text(isSaved ? 'Saved' : 'Save'),
                       ),
                     ],
                   ),

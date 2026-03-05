@@ -8,6 +8,7 @@ import '../../data/repositories/listings_repository.dart';
 import '../../domain/models/listing.dart';
 import '../../state/me_provider.dart';
 import '../../state/repositories_providers.dart';
+import '../../state/saved_properties_provider.dart';
 import '../../state/session_provider.dart';
 import '../marketplace/marketplace_mock_data.dart';
 import '../marketplace/public_agent_profile_screen.dart';
@@ -76,7 +77,6 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
   String? _statusDraft;
   bool _statusBusy = false;
   bool _openedVerification = false;
-  bool _isSaved = false;
   late final PageController _heroController;
   int _heroIndex = 0;
 
@@ -153,6 +153,10 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
         ref.watch(listingDetailRecordProvider(widget.listingId)).valueOrNull;
     final steps = _parseSteps(record);
     final progress = _progress(steps);
+    final listingId = listing?.id ?? '';
+    final isSaved = listingId.isNotEmpty
+        ? ref.watch(isListingSavedProvider(listingId))
+        : false;
 
     if (listing != null &&
         widget.showVerificationOnOpen &&
@@ -325,14 +329,16 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                 borderRadius: BorderRadius.circular(18),
                               ),
                             ),
-                            onPressed: () => setState(() => _isSaved = !_isSaved),
+                            onPressed: () => ref
+                                .read(savedListingIdsProvider.notifier)
+                                .toggle(listing.id),
                             icon: Icon(
-                              _isSaved
+                              isSaved
                                   ? Icons.favorite
                                   : Icons.favorite_border_outlined,
-                              color: _isSaved ? Colors.red : _jcHeading,
+                              color: isSaved ? Colors.red : _jcHeading,
                             ),
-                            label: Text(_isSaved ? 'Saved' : 'Save'),
+                            label: Text(isSaved ? 'Saved' : 'Save'),
                           ),
                         ],
                       ),
@@ -640,47 +646,8 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
 
   Future<void> _openVerificationDialog(
       Listing listing, List<_StepVm> seed) async {
-    final actor = _actor();
     final canEdit = _isAdmin;
-    var steps = List<_StepVm>.from(seed);
-    var busy = false;
-
-    Future<void> refreshSteps() async {
-      final latest =
-          await ref.read(listingDetailRecordProvider(widget.listingId).future);
-      final fromServer = _parseSteps(latest);
-      if (fromServer.isNotEmpty) {
-        steps = fromServer;
-      }
-    }
-
-    Future<void> updateStep(
-        StateSetter setModalState, String stepKey, String status) async {
-      if (!canEdit || actor == null) return;
-      setModalState(() => busy = true);
-      try {
-        await ref
-            .read(listingsRepositoryProvider)
-            .updateListingVerificationStepStatus(
-              listingId: listing.id,
-              stepKey: stepKey,
-              status: status,
-              actor: actor,
-            );
-        ref.invalidate(listingsProvider);
-        ref.invalidate(listingDetailRecordProvider(widget.listingId));
-        await refreshSteps();
-        setModalState(() {});
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update verification step: $e')),
-          );
-        }
-      } finally {
-        if (mounted) setModalState(() => busy = false);
-      }
-    }
+    final steps = List<_StepVm>.from(seed);
 
     await showDialog<void>(
       context: context,
@@ -742,8 +709,10 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                       ],
                     ),
                   ),
-                  Expanded(
+                  Flexible(
+                    fit: FlexFit.loose,
                     child: ListView(
+                      shrinkWrap: true,
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
                       children: [
                         _Card(
@@ -850,70 +819,13 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                                           ),
                                           child: Text(
                                             _stepStatusLabel(step.status),
-                                            style: TextStyle(
-                                              color: _stepStatusFg(step.status),
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                        if (canEdit) ...[
-                                          const SizedBox(height: 8),
-                                          SizedBox(
-                                            width: 155,
-                                            child:
-                                                DropdownButtonFormField<String>(
-                                              initialValue: step.status,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                color: _jcHeading,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              decoration: const InputDecoration(
-                                                contentPadding:
-                                                    EdgeInsets.symmetric(
-                                                  horizontal: 10,
-                                                  vertical: 8,
-                                                ),
-                                                border: OutlineInputBorder(),
-                                              ),
-                                              items: const [
-                                                DropdownMenuItem(
-                                                  value: 'pending',
-                                                  child: Text('Pending'),
-                                                ),
-                                                DropdownMenuItem(
-                                                  value: 'in_progress',
-                                                  child: Text('In Progress'),
-                                                ),
-                                                DropdownMenuItem(
-                                                  value: 'completed',
-                                                  child: Text('Completed'),
-                                                ),
-                                                DropdownMenuItem(
-                                                  value: 'blocked',
-                                                  child: Text('Blocked'),
-                                                ),
-                                              ],
-                                              onChanged: busy
-                                                  ? null
-                                                  : (value) {
-                                                      if (value == null ||
-                                                          value ==
-                                                              step.status) {
-                                                        return;
-                                                      }
-                                                      unawaited(
-                                                        updateStep(
-                                                          setModalState,
-                                                          step.key,
-                                                          value,
-                                                        ),
-                                                      );
-                                                    },
-                                            ),
-                                          ),
-                                        ],
+                                    style: TextStyle(
+                                      color: _stepStatusFg(step.status),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
                                       ],
                                     ),
                                   ],
@@ -932,28 +844,6 @@ class _ListingDetailsScreenState extends ConsumerState<ListingDetailsScreen> {
                           onPressed: () => Navigator.of(ctx).pop(),
                           child: const Text('Close'),
                         ),
-                        const Spacer(),
-                        if (canEdit)
-                          OutlinedButton(
-                            onPressed: busy || visibleSteps.isEmpty
-                                ? null
-                                : () async {
-                                    for (final step in visibleSteps) {
-                                      if (step.status != 'completed') {
-                                        await updateStep(setModalState,
-                                            step.key, 'completed');
-                                      }
-                                    }
-                                  },
-                            child: busy
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2),
-                                  )
-                                : const Text('Complete All Checks'),
-                          ),
                       ],
                     ),
                   ),

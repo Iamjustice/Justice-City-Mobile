@@ -6,11 +6,28 @@ import '../../domain/models/chat_conversation.dart';
 import '../../domain/models/listing.dart';
 import '../../state/me_provider.dart';
 import '../../state/repositories_providers.dart';
+import '../../state/saved_properties_provider.dart';
+import '../marketplace/marketplace_mock_data.dart';
 import '../shell/justice_city_shell.dart';
 
 const _jcPanelBorder = Color(0xFFE2E8F0);
 const _jcHeading = Color(0xFF0F172A);
 const _jcMuted = Color(0xFF64748B);
+
+enum _DashboardListingAction {
+  viewListing,
+  editListing,
+  viewVerificationProgress,
+  uploadAssets,
+  duplicateListing,
+  submitForReview,
+  archiveListing,
+  unarchiveListing,
+  markClosedDeal,
+  reopenListing,
+  markAgentPayoutPaid,
+  deleteListing,
+}
 
 final dashboardListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final me = await ref.watch(meProvider.future);
@@ -201,7 +218,7 @@ class _AdminDashboard extends ConsumerWidget {
                     children: [
                       _ListingsPane(listings: listings),
                       _VerificationPane(listings: listings),
-                      const _ChatsPane(isAdmin: true),
+                      const _AdminChatsPane(),
                       const _AdminOpsPane(),
                     ],
                   ),
@@ -645,13 +662,20 @@ class _OwnerDashboard extends ConsumerWidget {
   }
 }
 
-class _BuyerDashboard extends StatelessWidget {
+class _BuyerDashboard extends ConsumerWidget {
   const _BuyerDashboard({required this.displayName});
 
   final String displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final savedIds = ref.watch(savedListingIdsProvider).toList(growable: false);
+    final savedProperties = savedIds
+        .map(marketplacePropertyById)
+        .whereType<MarketplaceProperty>()
+        .toList(growable: false);
+    final preview = savedProperties.take(4).toList(growable: false);
+
     return JusticeCityShell(
       currentPath: '/dashboard',
       child: ListView(
@@ -691,6 +715,59 @@ class _BuyerDashboard extends StatelessWidget {
             title: 'In-App Chats',
             subtitle: 'Continue existing support and transaction conversations',
             onTap: () => context.go('/chat'),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _jcPanelBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Saved Properties',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: _jcHeading,
+                        ),
+                      ),
+                    ),
+                    _AgentSectionCountBadge(label: '${savedIds.length} saved'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Properties you saved from the marketplace appear here for quick access.',
+                  style: TextStyle(color: _jcMuted, height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                if (preview.isEmpty)
+                  const _EmptyState(
+                    message: 'No saved properties yet. Tap Save on any listing card.',
+                  )
+                else ...[
+                  ...preview.map((property) => _BuyerSavedListingTile(
+                        property: property,
+                      )),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.go('/home'),
+                      icon: const Icon(Icons.search_outlined),
+                      label: const Text('View Marketplace'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           const JusticeCityFooter(),
@@ -1062,6 +1139,8 @@ class _ListingsPane extends StatelessWidget {
           ...listings
               .take(6)
               .map((listing) => _ListingPreviewTile(listing: listing)),
+        const SizedBox(height: 12),
+        const JusticeCityFooter(),
       ],
     );
   }
@@ -1173,7 +1252,91 @@ class _ChatsPane extends StatelessWidget {
             subtitle: 'Open moderation, disputes, and PDF job operations',
             onTap: () => context.go('/admin'),
           ),
+        const SizedBox(height: 12),
+        const JusticeCityFooter(),
       ],
+    );
+  }
+}
+
+class _AdminChatsPane extends ConsumerWidget {
+  const _AdminChatsPane();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final conversationsAsync = ref.watch(dashboardConversationsProvider);
+
+    return conversationsAsync.when(
+      loading: () => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        children: const [
+          _AdminConversationHeader(conversationCountLabel: 'Loading'),
+          SizedBox(height: 10),
+          _EmptyState(message: 'Loading conversation moderation feed...'),
+          SizedBox(height: 12),
+          JusticeCityFooter(),
+        ],
+      ),
+      error: (error, _) => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        children: [
+          const _AdminConversationHeader(
+            conversationCountLabel: 'Inbox unavailable',
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.forum_outlined,
+            title: 'Open Chat Workspace',
+            subtitle:
+                'Continue in the full chat workspace while moderation feed reloads.',
+            onTap: () => context.go('/chat'),
+          ),
+          const SizedBox(height: 10),
+          _ActionTile(
+            icon: Icons.admin_panel_settings_outlined,
+            title: 'Open Admin Moderation',
+            subtitle: 'Use full admin queue controls and dispute workflows.',
+            onTap: () => context.go('/admin'),
+          ),
+          const SizedBox(height: 10),
+          _EmptyState(message: 'Could not load conversations: $error'),
+          const SizedBox(height: 12),
+          const JusticeCityFooter(),
+        ],
+      ),
+      data: (conversations) {
+        final recent = conversations.take(10).toList(growable: false);
+        final countLabel = conversations.isEmpty
+            ? 'No conversations'
+            : '${conversations.length} conversations';
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          children: [
+            _AdminConversationHeader(conversationCountLabel: countLabel),
+            const SizedBox(height: 10),
+            if (recent.isEmpty)
+              const _EmptyState(
+                message: 'No conversations to moderate yet.',
+              )
+            else
+              ...recent.map(
+                (conversation) => _AgentConversationCard(
+                  conversation: conversation,
+                ),
+              ),
+            const SizedBox(height: 10),
+            _ActionTile(
+              icon: Icons.admin_panel_settings_outlined,
+              title: 'Open Admin Moderation',
+              subtitle: 'Open full moderation queues, disputes, and ops tools.',
+              onTap: () => context.go('/admin'),
+            ),
+            const SizedBox(height: 12),
+            const JusticeCityFooter(),
+          ],
+        );
+      },
     );
   }
 }
@@ -1280,6 +1443,8 @@ class _VerificationPane extends StatelessWidget {
                   context.go('/property/${listing.id}', extra: listing),
             ),
           ),
+        const SizedBox(height: 12),
+        const JusticeCityFooter(),
       ],
     );
   }
@@ -1625,6 +1790,66 @@ class _SellerVerificationPane extends StatelessWidget {
     );
   }
 }
+
+class _AdminConversationHeader extends StatelessWidget {
+  const _AdminConversationHeader({required this.conversationCountLabel});
+
+  final String conversationCountLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Conversation Moderation',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _jcHeading,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Review recent platform conversations and jump into threads for moderation follow-up.',
+                      style: TextStyle(color: _jcMuted, height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              _AgentSectionCountBadge(label: conversationCountLabel),
+            ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: 220,
+            child: FilledButton.icon(
+              onPressed: () => context.go('/chat'),
+              icon: const Icon(Icons.forum_outlined),
+              label: const Text('Open Conversations'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AgentConversationHeader extends StatelessWidget {
   const _AgentConversationHeader({required this.conversationCountLabel});
 
@@ -1862,11 +2087,165 @@ class _ListingPreviewTile extends StatelessWidget {
               ),
             ),
             _StatusBadge(status: listing.status ?? '-'),
+            PopupMenuButton<_DashboardListingAction>(
+              tooltip: 'Listing actions',
+              icon: const Icon(Icons.more_horiz_rounded),
+              onSelected: (action) =>
+                  _handleDashboardListingAction(context, listing, action),
+              itemBuilder: (_) => _dashboardListingMenuItemsFor(listing),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+void _handleDashboardListingAction(
+  BuildContext context,
+  Listing listing,
+  _DashboardListingAction action,
+) {
+  switch (action) {
+    case _DashboardListingAction.viewListing:
+      context.go('/property/${listing.id}', extra: listing);
+      break;
+    case _DashboardListingAction.editListing:
+      context.go('/listings');
+      break;
+    case _DashboardListingAction.viewVerificationProgress:
+      context.go('/property/${listing.id}?view=verification', extra: listing);
+      break;
+    case _DashboardListingAction.uploadAssets:
+      _openListingsConsoleForAction(context, 'Upload Assets');
+      break;
+    case _DashboardListingAction.duplicateListing:
+      _openListingsConsoleForAction(context, 'Duplicate Listing');
+      break;
+    case _DashboardListingAction.submitForReview:
+      _openListingsConsoleForAction(context, 'Submit for Review');
+      break;
+    case _DashboardListingAction.archiveListing:
+      _openListingsConsoleForAction(context, 'Archive Listing');
+      break;
+    case _DashboardListingAction.unarchiveListing:
+      _openListingsConsoleForAction(context, 'Unarchive Listing');
+      break;
+    case _DashboardListingAction.markClosedDeal:
+      _openListingsConsoleForAction(context, 'Mark Closed Deal');
+      break;
+    case _DashboardListingAction.reopenListing:
+      _openListingsConsoleForAction(context, 'Reopen Listing');
+      break;
+    case _DashboardListingAction.markAgentPayoutPaid:
+      _openListingsConsoleForAction(context, 'Mark Agent Payout Paid');
+      break;
+    case _DashboardListingAction.deleteListing:
+      _openListingsConsoleForAction(context, 'Delete Listing');
+      break;
+  }
+}
+
+void _openListingsConsoleForAction(BuildContext context, String actionLabel) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        '$actionLabel is available in Listings Console for this listing.',
+      ),
+      duration: const Duration(seconds: 2),
+    ),
+  );
+  context.go('/listings');
+}
+
+List<PopupMenuEntry<_DashboardListingAction>> _dashboardListingMenuItemsFor(
+  Listing listing,
+) {
+  final status = (listing.status ?? '').trim().toLowerCase();
+  final isArchived = status == 'archived';
+  final isPublished = status == 'published';
+  final isClosed = status == 'sold' || status == 'rented';
+  final canSubmitForReview = status == 'draft' || status == 'archived';
+
+  final items = <PopupMenuEntry<_DashboardListingAction>>[
+    const PopupMenuItem<_DashboardListingAction>(
+      value: _DashboardListingAction.viewListing,
+      child: Text('View Listing'),
+    ),
+    const PopupMenuItem<_DashboardListingAction>(
+      value: _DashboardListingAction.editListing,
+      child: Text('Edit Listing'),
+    ),
+    const PopupMenuItem<_DashboardListingAction>(
+      value: _DashboardListingAction.viewVerificationProgress,
+      child: Text('View Verification Progress'),
+    ),
+    const PopupMenuDivider(),
+    const PopupMenuItem<_DashboardListingAction>(
+      value: _DashboardListingAction.uploadAssets,
+      child: Text('Upload Assets'),
+    ),
+    const PopupMenuItem<_DashboardListingAction>(
+      value: _DashboardListingAction.duplicateListing,
+      child: Text('Duplicate Listing'),
+    ),
+  ];
+
+  if (!isArchived && !isClosed) {
+    items.add(
+      const PopupMenuItem<_DashboardListingAction>(
+        value: _DashboardListingAction.archiveListing,
+        child: Text('Archive Listing'),
+      ),
+    );
+  }
+  if (canSubmitForReview) {
+    items.add(
+      const PopupMenuItem<_DashboardListingAction>(
+        value: _DashboardListingAction.submitForReview,
+        child: Text('Submit for Review'),
+      ),
+    );
+  }
+  if (isArchived) {
+    items.add(
+      const PopupMenuItem<_DashboardListingAction>(
+        value: _DashboardListingAction.unarchiveListing,
+        child: Text('Unarchive Listing'),
+      ),
+    );
+  }
+  if (isPublished) {
+    items.add(
+      const PopupMenuItem<_DashboardListingAction>(
+        value: _DashboardListingAction.markClosedDeal,
+        child: Text('Mark Closed Deal'),
+      ),
+    );
+  }
+  if (isClosed) {
+    items.add(
+      const PopupMenuItem<_DashboardListingAction>(
+        value: _DashboardListingAction.reopenListing,
+        child: Text('Reopen Listing'),
+      ),
+    );
+    items.add(
+      const PopupMenuItem<_DashboardListingAction>(
+        value: _DashboardListingAction.markAgentPayoutPaid,
+        child: Text('Mark Agent Payout Paid'),
+      ),
+    );
+  }
+
+  items.add(const PopupMenuDivider());
+  items.add(
+    const PopupMenuItem<_DashboardListingAction>(
+      value: _DashboardListingAction.deleteListing,
+      child: Text('Delete Listing'),
+    ),
+  );
+  return items;
 }
 
 class _AgentListingCard extends StatelessWidget {
@@ -1922,10 +2301,12 @@ class _AgentListingCard extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
-                tooltip: 'Open listing',
-                onPressed: () => context.go('/property/${listing.id}', extra: listing),
-                icon: const Icon(Icons.chevron_right_rounded),
+              PopupMenuButton<_DashboardListingAction>(
+                tooltip: 'Listing actions',
+                icon: const Icon(Icons.more_horiz_rounded),
+                onSelected: (action) =>
+                    _handleDashboardListingAction(context, listing, action),
+                itemBuilder: (_) => _dashboardListingMenuItemsFor(listing),
               ),
             ],
           ),
@@ -2256,6 +2637,108 @@ class _ActionTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BuyerSavedListingTile extends ConsumerWidget {
+  const _BuyerSavedListingTile({required this.property});
+
+  final MarketplaceProperty property;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isSaved = ref.watch(isListingSavedProvider(property.id));
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _jcPanelBorder),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              property.imageUrl,
+              width: 72,
+              height: 72,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 72,
+                height: 72,
+                color: const Color(0xFFE2E8F0),
+                alignment: Alignment.center,
+                child: const Icon(Icons.home_work_outlined, color: _jcMuted),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  property.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _jcHeading,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  property.location,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: _jcMuted),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatSavedMarketplacePrice(property.price),
+                  style: const TextStyle(
+                    color: _jcHeading,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            children: [
+              OutlinedButton(
+                onPressed: () => context.go('/property/${property.id}'),
+                child: const Text('Open'),
+              ),
+              const SizedBox(height: 8),
+              if (isSaved)
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      ref.read(savedListingIdsProvider.notifier).toggle(property.id),
+                  icon: const Icon(Icons.favorite, color: Colors.red, size: 16),
+                  label: const Text('Saved'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _formatSavedMarketplacePrice(num amount) {
+  final digits = amount.toStringAsFixed(0);
+  final buffer = StringBuffer('\u20A6');
+  for (var i = 0; i < digits.length; i++) {
+    final fromEnd = digits.length - i;
+    buffer.write(digits[i]);
+    if (fromEnd > 1 && fromEnd % 3 == 1) {
+      buffer.write(',');
+    }
+  }
+  return buffer.toString();
 }
 
 class _StatusBadge extends StatelessWidget {

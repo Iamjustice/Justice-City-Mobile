@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../env.dart';
 import '../../state/me_provider.dart';
+import '../../state/saved_properties_provider.dart';
 import '../../state/session_provider.dart';
 import '../marketplace/marketplace_mock_data.dart';
 import '../marketplace/public_agent_profile_screen.dart';
@@ -507,24 +508,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
 }
 
-class _PropertyCard extends StatefulWidget {
+class _PropertyCard extends ConsumerWidget {
   const _PropertyCard({required this.property, required this.onTap});
 
   final MarketplaceProperty property;
   final VoidCallback onTap;
 
   @override
-  State<_PropertyCard> createState() => _PropertyCardState();
-}
-
-class _PropertyCardState extends State<_PropertyCard> {
-  bool _saved = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final property = widget.property;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final property = this.property;
+    final isSaved = ref.watch(isListingSavedProvider(property.id));
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -550,12 +545,17 @@ class _PropertyCardState extends State<_PropertyCard> {
                       right: 14,
                       bottom: 18,
                       child: InkWell(
-                        onTap: () => setState(() => _saved = !_saved),
+                        onTap: () => ref
+                            .read(savedListingIdsProvider.notifier)
+                            .toggle(property.id),
                         child: Container(
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), shape: BoxShape.circle, border: Border.all(color: Colors.white.withValues(alpha: 0.36))),
-                          child: Icon(_saved ? Icons.favorite : Icons.favorite_border, color: Colors.white),
+                          child: Icon(
+                            isSaved ? Icons.favorite : Icons.favorite_border,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
