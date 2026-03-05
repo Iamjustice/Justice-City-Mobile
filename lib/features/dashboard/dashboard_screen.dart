@@ -308,7 +308,7 @@ class _AgentDashboard extends ConsumerWidget {
                       Expanded(
                         child: _AgentSummaryCard(
                           title: 'Pending Agent Payouts',
-                          value: stats.closed == 0 ? 'NO' : '${stats.closed}',
+                          value: '${stats.closed}',
                           icon: Icons.schedule_rounded,
                           accentColor: const Color(0xFFD97706),
                         ),
@@ -1053,7 +1053,7 @@ class _AgentSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 150,
+      constraints: const BoxConstraints(minHeight: 150),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1062,31 +1062,42 @@ class _AgentSummaryCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Align(
-            alignment: Alignment.topRight,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE5E7EB), width: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 15, color: _jcMuted),
+                ),
               ),
-              child: Icon(icon, color: accentColor, size: 24),
-            ),
+              const SizedBox(width: 10),
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE5E7EB), width: 4),
+                ),
+                child: Icon(icon, color: accentColor, size: 22),
+              ),
+            ],
           ),
-          const Spacer(),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 15, color: _jcMuted),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: _jcHeading,
+          const SizedBox(height: 14),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+                color: _jcHeading,
+              ),
             ),
           ),
         ],
